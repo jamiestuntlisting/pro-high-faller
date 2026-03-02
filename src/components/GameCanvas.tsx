@@ -51,6 +51,7 @@ export function GameCanvas({
         display: 'block',
         margin: '0 auto',
         border: '2px solid #333',
+        touchAction: 'none',
       }}
     />
   );

@@ -21,14 +21,35 @@ export class InputManager {
     this.consumed.delete(e.code);
   };
 
+  // Touch → treat as Space
+  private touchstartHandler = (e: TouchEvent) => {
+    e.preventDefault(); // prevent scroll / zoom
+    if (!this.keys.has('Space')) {
+      this.justPressed.add('Space');
+    }
+    this.keys.add('Space');
+  };
+
+  private touchendHandler = (e: TouchEvent) => {
+    e.preventDefault();
+    this.keys.delete('Space');
+    this.consumed.delete('Space');
+  };
+
   attach(): void {
     window.addEventListener('keydown', this.keydownHandler);
     window.addEventListener('keyup', this.keyupHandler);
+    window.addEventListener('touchstart', this.touchstartHandler, { passive: false });
+    window.addEventListener('touchend', this.touchendHandler, { passive: false });
+    window.addEventListener('touchcancel', this.touchendHandler, { passive: false });
   }
 
   detach(): void {
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
+    window.removeEventListener('touchstart', this.touchstartHandler);
+    window.removeEventListener('touchend', this.touchendHandler);
+    window.removeEventListener('touchcancel', this.touchendHandler);
     this.keys.clear();
     this.justPressed.clear();
     this.consumed.clear();

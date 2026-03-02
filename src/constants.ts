@@ -1,6 +1,6 @@
 // === DISPLAY ===
 export const GAME_WIDTH = 320;
-export const GAME_HEIGHT = 240;
+export const GAME_HEIGHT = 320;
 
 // Scale: a 6ft person is ~24px tall on screen → 4 px per foot
 export const PIXELS_PER_FOOT = 4;

@@ -188,6 +188,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    touchAction: 'manipulation',
   },
   gameContainer: {
     position: 'relative',
