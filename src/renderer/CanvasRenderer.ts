@@ -73,7 +73,7 @@ export class CanvasRenderer {
 
     // Landed info for environment deformation
     const landedInfo = f.phase === 'LANDED'
-      ? { x: screenX, angle: f.angle }
+      ? { x: screenX, angle: f.angle, time: state.landedTime }
       : null;
 
     // Draw environment (world space)
@@ -96,14 +96,14 @@ export class CanvasRenderer {
     const crewTextScreenY = crewTextWorldY - viewY;
     if (crewTextScreenY < GAME_HEIGHT) {
       // Crew text visible in world space
-      this.drawCrewText(ctx, state, baseCrewX, layout.groundY);
+      this.drawCrewText(ctx, state, layout.groundY);
     }
 
     // Draw faller (world space)
     FallerRenderer.draw(
       ctx, screenX, fallerWorldY, interpAngle,
       f.phase, f.isTucked, pivotAtFeet, state.elapsedTime,
-      state.level.level, state.jumpTimer,
+      state.level.level, state.jumpTimer, state.level.targetType,
     );
 
     ctx.restore();
@@ -117,20 +117,27 @@ export class CanvasRenderer {
   private drawCrewText(
     ctx: CanvasRenderingContext2D,
     state: GameState,
-    baseCrewX: number,
     groundY: number,
   ): void {
     const text = state.crewCallout || state.crewText;
     if (!text) return;
 
-    // Position above the first crew group's director (offset +10px from base, above heads)
-    const textX = baseCrewX + 10;
+    // Center text on canvas so long strings don't clip off the edges
+    const textX = GAME_WIDTH / 2;
     const textY = groundY - 36;
 
     ctx.save();
-    ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
+
+    // Pick a font size that fits within the canvas width (with padding)
+    let fontSize = 12;
+    ctx.font = `bold ${fontSize}px monospace`;
+    const maxTextWidth = GAME_WIDTH - 16;
+    while (fontSize > 6 && ctx.measureText(text).width > maxTextWidth) {
+      fontSize--;
+      ctx.font = `bold ${fontSize}px monospace`;
+    }
 
     // Color logic matching the old HUD style
     let color: string;
@@ -180,9 +187,17 @@ export class CanvasRenderer {
     if (!text) return;
 
     ctx.save();
-    ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
+
+    // Pick a font size that fits within the canvas width (with padding)
+    let fontSize = 14;
+    ctx.font = `bold ${fontSize}px monospace`;
+    const maxTextWidth = GAME_WIDTH - 16;
+    while (fontSize > 7 && ctx.measureText(text).width > maxTextWidth) {
+      fontSize--;
+      ctx.font = `bold ${fontSize}px monospace`;
+    }
 
     // Same color logic as drawCrewText
     let color: string;

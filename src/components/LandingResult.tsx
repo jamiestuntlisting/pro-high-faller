@@ -20,7 +20,7 @@ export function LandingResult({
   onRetry,
   onShop,
 }: Props) {
-  const passed = result.grade !== 'F' && result.grade !== 'D';
+  const passed = result.grade !== 'F';
   const showShop = careerHealth < 120 && careerHealth > 0;
 
   useEffect(() => {

@@ -42,7 +42,9 @@ export function score(state: GameState): LandingResult {
   if (missedTarget) {
     grade = 'F';
   } else {
-    const angleGrade = deviationToGrade(deviation);
+    let angleGrade = deviationToGrade(deviation);
+    // If you hit the target, worst grade is D — F is only for missing entirely
+    if (angleGrade === 'F') angleGrade = 'D';
     // Off-center caps your best possible grade — generous thresholds
     if (horizontalAccuracy < 0.1) {
       grade = worstGrade(angleGrade, 'D');

@@ -107,6 +107,7 @@ export class GameLoop {
 
     // Check if just landed — show callout, then advance after 2s or on SPACE
     if (this.state.faller.phase === 'LANDED') {
+      this.state.landedTime += dt;
       if (!this.state.landing) {
         let result;
 
@@ -125,17 +126,14 @@ export class GameLoop {
             horizontalAccuracy: 0,
           };
         } else if (this.state.countdown.jumpedBeforeRolling) {
-          // Jumped before cameras were rolling — voided take, must repeat level
+          // Jumped before cameras were rolling — voided take, but still physically hit the ground
+          const physicalResult = LandingScorer.score(this.state);
           result = {
-            landingAngle: 0,
-            idealAngle: this.state.level.idealAngle,
-            angleDeviation: 0,
+            ...physicalResult,
             grade: 'F' as const,
-            injuryPoints: 0,
-            injuryDescription: "Cameras weren't rolling. Wasted take.",
+            injuryDescription: "Cameras weren't rolling. Wasted take. " + physicalResult.injuryDescription,
             pay: 0,
             credibilityPoints: -5,
-            horizontalAccuracy: 0,
           };
         } else {
           result = LandingScorer.score(this.state);

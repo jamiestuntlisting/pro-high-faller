@@ -1,4 +1,4 @@
-import type { FallerPhase } from '../types';
+import type { FallerPhase, TargetType } from '../types';
 import { RENDER } from '../constants';
 
 // ========================================================
@@ -61,15 +61,12 @@ export function draw(
   fallTime = 0,
   levelNum = 1,
   jumpTimer = 0,
+  targetType: TargetType = 'airbag',
 ): void {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate((angle * Math.PI) / 180);
 
-  const color = phase === 'LANDED'
-    ? RENDER.ASCII_MED
-    : isTucked ? RENDER.ASCII_BRIGHT : RENDER.FALLER_COLOR;
-
+  const color = isTucked ? RENDER.ASCII_BRIGHT : RENDER.FALLER_COLOR;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = 1.5;
@@ -77,15 +74,20 @@ export function draw(
 
   const headR = 3;
   const bodyH = 28;
-  const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
   const costume = getCostume(levelNum);
 
   if (phase === 'LANDED') {
-    drawLanded(ctx, oy + bodyH, costume);
-  } else if (isTucked && phase === 'FALLING') {
-    drawTucked(ctx, oy, headR, bodyH, costume);
+    // No rotation for landed — draw in a natural ground-relative pose
+    drawLanded(ctx, costume, targetType);
   } else {
-    drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume, jumpTimer);
+    ctx.rotate((angle * Math.PI) / 180);
+    const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
+
+    if (isTucked && phase === 'FALLING') {
+      drawTucked(ctx, oy, headR, bodyH, costume);
+    } else {
+      drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume, jumpTimer);
+    }
   }
 
   ctx.restore();
@@ -399,36 +401,188 @@ function drawTucked(
 //  LANDED POSE
 // ========================================================
 
-function drawLanded(ctx: CanvasRenderingContext2D, groundLocalY: number, costume: Costume): void {
-  const gy = groundLocalY - 1;
+function drawLanded(
+  ctx: CanvasRenderingContext2D,
+  costume: Costume,
+  targetType: TargetType,
+): void {
+  // Origin is at the landing point (ground surface level)
+  // y < 0 is above surface, y > 0 is below
+  const headR = 2.5;
 
-  // Head (skin)
-  ctx.fillStyle = '#ddbbaa';
-  ctx.beginPath();
-  ctx.arc(-8, gy - 2, 2.5, 0, Math.PI * 2);
-  ctx.fill();
+  if (targetType === 'airbag') {
+    // Lying on back, sunk into airbag — relaxed pose
+    // Head
+    ctx.fillStyle = '#ddbbaa';
+    ctx.beginPath();
+    ctx.arc(-8, -3, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222222';
+    ctx.beginPath();
+    ctx.arc(-7, -3.5, 0.8, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Body (shirt color)
-  ctx.strokeStyle = costume.shirt;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(-5, gy);
-  ctx.lineTo(3, gy);
-  ctx.stroke();
+    // Torso (shirt) — horizontal
+    ctx.strokeStyle = costume.shirt;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-5, -1);
+    ctx.lineTo(3, -1);
+    ctx.stroke();
 
-  // Legs (pants color)
-  ctx.strokeStyle = costume.pants;
-  ctx.beginPath();
-  ctx.moveTo(3, gy);
-  ctx.lineTo(8, gy);
-  ctx.stroke();
+    // Shirt stripes
+    ctx.strokeStyle = costume.shirtAccent;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-3, -2.5);
+    ctx.lineTo(-3, 0.5);
+    ctx.moveTo(0, -2.5);
+    ctx.lineTo(0, 0.5);
+    ctx.stroke();
 
-  // Arm up (sleeve)
-  ctx.strokeStyle = costume.sleeve;
-  ctx.beginPath();
-  ctx.moveTo(0, gy);
-  ctx.lineTo(3, gy - 5);
-  ctx.stroke();
+    // Arms out to sides (sleeve) — relaxed spread
+    ctx.strokeStyle = costume.sleeve;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-4, -1);
+    ctx.lineTo(-7, -6);
+    ctx.moveTo(1, -1);
+    ctx.lineTo(5, -5);
+    ctx.stroke();
+
+    // Legs (pants) — slightly apart
+    ctx.strokeStyle = costume.pants;
+    ctx.beginPath();
+    ctx.moveTo(3, -1);
+    ctx.lineTo(8, 1);
+    ctx.moveTo(3, -1);
+    ctx.lineTo(9, -2);
+    ctx.stroke();
+
+    // Boots
+    ctx.strokeStyle = costume.boots;
+    ctx.beginPath();
+    ctx.moveTo(8, 1);
+    ctx.lineTo(10, 1);
+    ctx.moveTo(9, -2);
+    ctx.lineTo(11, -2);
+    ctx.stroke();
+
+  } else if (targetType === 'water') {
+    // Upper body visible above water, lower half submerged
+    // Head
+    ctx.fillStyle = '#ddbbaa';
+    ctx.beginPath();
+    ctx.arc(0, -10, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222222';
+    ctx.beginPath();
+    ctx.arc(1, -10.5, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Torso (shirt) — upper body above surface
+    ctx.strokeStyle = costume.shirt;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(0, -2);
+    ctx.stroke();
+
+    // Arms (sleeve) — treading water, spread out
+    ctx.strokeStyle = costume.sleeve;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-7, -3);
+    ctx.lineTo(0, -5);
+    ctx.lineTo(7, -3);
+    ctx.stroke();
+
+    // Water line ripples around the figure
+    ctx.strokeStyle = '#6699bb';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-10, -1);
+    ctx.lineTo(-5, -2);
+    ctx.moveTo(5, -2);
+    ctx.lineTo(10, -1);
+    ctx.stroke();
+
+  } else {
+    // Boxes — slumped/sitting among crushed boxes
+    // Head
+    ctx.fillStyle = '#ddbbaa';
+    ctx.beginPath();
+    ctx.arc(-1, -12, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222222';
+    ctx.beginPath();
+    ctx.arc(0, -12.5, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Torso (shirt) — slumped forward
+    ctx.strokeStyle = costume.shirt;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-1, -9);
+    ctx.lineTo(1, -3);
+    ctx.stroke();
+
+    // Arms (sleeve) — one hanging, one resting on knee
+    ctx.strokeStyle = costume.sleeve;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-1, -8);
+    ctx.lineTo(-5, -5);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(5, -4);
+    ctx.stroke();
+
+    // Legs (pants) — splayed out
+    ctx.strokeStyle = costume.pants;
+    ctx.beginPath();
+    ctx.moveTo(1, -3);
+    ctx.lineTo(-4, 0);
+    ctx.moveTo(1, -3);
+    ctx.lineTo(5, 0);
+    ctx.stroke();
+
+    // Boots
+    ctx.strokeStyle = costume.boots;
+    ctx.beginPath();
+    ctx.moveTo(-6, 0);
+    ctx.lineTo(-2, 0);
+    ctx.moveTo(3, 0);
+    ctx.lineTo(7, 0);
+    ctx.stroke();
+  }
+
+  // Cape draped nearby
+  if (costume.cape) {
+    ctx.strokeStyle = costume.cape;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (targetType === 'water') {
+      ctx.moveTo(-3, -1);
+      ctx.quadraticCurveTo(-8, -2, -14, 0);
+    } else if (targetType === 'airbag') {
+      ctx.moveTo(-5, -1);
+      ctx.quadraticCurveTo(-10, -3, -15, 0);
+    } else {
+      ctx.moveTo(-1, -9);
+      ctx.quadraticCurveTo(-6, -7, -10, -2);
+    }
+    ctx.stroke();
+  }
+
+  // Hat knocked off to the side
+  if (costume.hat) {
+    ctx.save();
+    ctx.translate(10, -14);
+    ctx.rotate(0.4);
+    ctx.fillStyle = costume.hat.color;
+    drawHatShape(ctx, costume.hat.style);
+    ctx.restore();
+  }
 }
 
 // ========================================================

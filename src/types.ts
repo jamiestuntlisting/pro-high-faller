@@ -77,6 +77,8 @@ export interface GameState {
   // Crew text rendered in world space above camera crew
   crewText: string | null;
   crewCallout: string | null;
+  // Landing animation
+  landedTime: number;       // Seconds since landing (for splash/settle animation)
   // Previous frame (for interpolation)
   prevX: number;
   prevY: number;

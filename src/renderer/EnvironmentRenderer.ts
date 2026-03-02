@@ -16,6 +16,7 @@ export interface SceneLayout {
 export interface LandedInfo {
   x: number;     // screen-space X of the faller
   angle: number; // landing angle
+  time: number;  // seconds since landing (for splash animation)
 }
 
 export function getLayout(level: LevelConfig): SceneLayout {
@@ -143,6 +144,47 @@ function drawLandingZone(
         ctx.fillText('~', wx, rowY);
       }
     }
+
+    // Water splash animation on landing
+    if (landedInfo && landedInfo.time < 1.5) {
+      const t = landedInfo.time;
+      const splashAlpha = Math.max(0, 1 - t / 1.5);
+      ctx.save();
+      ctx.globalAlpha = splashAlpha;
+
+      // Splash droplets rising and falling
+      const dropCount = 8;
+      for (let i = 0; i < dropCount; i++) {
+        const seed = ((i * 17 + 7) % 13) / 13;
+        const spreadX = (seed - 0.5) * 40;
+        const launchV = 20 + seed * 30;
+        const dropY = groundY - launchV * t + 60 * t * t; // gravity pulls back
+        const dropX = landedInfo.x + spreadX * t;
+
+        if (dropY < groundY) {
+          ctx.fillStyle = '#88bbdd';
+          ctx.beginPath();
+          ctx.arc(dropX, dropY, 1.5 - t * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Splash rings on water surface
+      const ringRadius = 5 + t * 25;
+      ctx.strokeStyle = '#88bbdd';
+      ctx.lineWidth = 1.5 - t;
+      ctx.beginPath();
+      ctx.ellipse(landedInfo.x, groundY - 2, ringRadius, 3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      if (t < 0.8) {
+        const ring2 = 2 + t * 15;
+        ctx.beginPath();
+        ctx.ellipse(landedInfo.x, groundY - 2, ring2, 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
   } else {
     const matTop = groundY - matHeight;
 
@@ -151,9 +193,9 @@ function drawLandingZone(
       const getIndent = (px: number): number => {
         if (!landedInfo) return 0;
         const dist = Math.abs(px - landedInfo.x);
-        // Smooth gaussian-ish falloff, 4px max indent, 20px radius
-        if (dist > 20) return 0;
-        return Math.round(4 * Math.exp(-(dist * dist) / 100));
+        // Deep gaussian fold, 10px max indent, 30px radius
+        if (dist > 30) return 0;
+        return Math.round(10 * Math.exp(-(dist * dist) / 180));
       };
 
       // Top edge — indents where the performer landed
@@ -171,7 +213,6 @@ function drawLandingZone(
         ctx.fillStyle = r % 2 === 0 ? RENDER.ASCII_DIM : '#1a1a1a';
         for (let mx = left + 6; mx < right - 6; mx += 6) {
           const indent = getIndent(mx);
-          // Only draw body chars below the indented top
           const charY = matTop + 4 + r * 4;
           if (charY >= matTop + indent) {
             ctx.fillText('█', mx, charY);
@@ -186,7 +227,7 @@ function drawLandingZone(
       }
     } else {
       // Boxes — stack rows of [##] scaling with height
-      // When landed, shift boxes near impact point
+      // When landed, crush and scatter boxes at impact point
       ctx.textBaseline = 'top';
       const boxRows = Math.max(2, Math.floor(matHeight / 4));
       for (let r = 0; r < boxRows; r++) {
@@ -196,17 +237,31 @@ function drawLandingZone(
         for (let mx = left + baseOffset; mx < right; mx += 12) {
           let drawX = mx;
           let drawY = matTop + r * 4;
-          // Scatter boxes near impact
-          if (landedInfo && r < 2) {
+          let boxText = '[##]';
+
+          if (landedInfo) {
             const dist = Math.abs(mx - landedInfo.x);
-            if (dist < 15) {
-              // Deterministic scatter based on position
-              const hash = ((mx * 7 + r * 13) % 5) - 2;
-              drawX += hash;
-              drawY += Math.abs(hash) > 1 ? 1 : 0;
+            if (dist < 25) {
+              if (r < 2) {
+                // Top rows: scatter outward and crush
+                const hash = ((mx * 7 + r * 13) % 5) - 2;
+                const push = dist < 10 ? (landedInfo.x > mx ? -3 : 3) : 0;
+                drawX += hash * 2 + push;
+                drawY += Math.round(3 * Math.exp(-(dist * dist) / 120));
+                if (dist < 8 && r === 0) {
+                  boxText = '[__]'; // crushed flat
+                  ctx.fillStyle = '#332211';
+                }
+              } else if (r < 4) {
+                const hash = ((mx * 7 + r * 13) % 3) - 1;
+                drawX += hash;
+              }
             }
           }
-          ctx.fillText('[##]', drawX, drawY);
+
+          ctx.fillText(boxText, drawX, drawY);
+          // Restore shade after crushed box override
+          ctx.fillStyle = shade;
         }
       }
     }
