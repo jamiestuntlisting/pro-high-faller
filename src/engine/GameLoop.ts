@@ -111,14 +111,15 @@ export class GameLoop {
         let result;
 
         if (this.state.faller.verticalJump) {
-          // Double-tap vertical jump — chickened out, landed back on the building
+          // Double-tap panic — fell straight off the building feet first
+          const h = this.state.level.height;
           result = {
             landingAngle: 0,
             idealAngle: this.state.level.idealAngle,
-            angleDeviation: 0,
+            angleDeviation: Math.abs(0 - this.state.level.idealAngle),
             grade: 'F' as const,
-            injuryPoints: 0,
-            injuryDescription: "Cold feet. Didn't even jump.",
+            injuryPoints: Math.min(80, Math.round(h * 1.5)),
+            injuryDescription: "Panicked and fell straight off the edge. No airbag.",
             pay: 0,
             credibilityPoints: -8,
             horizontalAccuracy: 0,
@@ -150,19 +151,14 @@ export class GameLoop {
             }
           }
 
-          // Check if faller hit a Panavision camera — catastrophic penalty
+          // Check if faller hit the Panavision camera — catastrophic penalty
           const baseCrewX = BUILDING_WIDTH_PX + naturalLandingDistance(this.state.level.height) * PIXELS_PER_FOOT
             + this.state.level.targetSize + CAMERA_CREW_OFFSET;
-          const camCount = this.state.level.level >= 14 ? 3 : this.state.level.level >= 8 ? 2 : 1;
-          for (let ci = 0; ci < camCount; ci++) {
-            const crewScreenX = baseCrewX + ci * 45;
-            const crewFt = (crewScreenX - BUILDING_WIDTH_PX) / PIXELS_PER_FOOT;
-            if (Math.abs(this.state.faller.x - crewFt) < 4) {
-              result.credibilityPoints = -20;
-              result.injuryPoints = 100;
-              result.grade = 'F';
-              break;
-            }
+          const crewFt = (baseCrewX - BUILDING_WIDTH_PX) / PIXELS_PER_FOOT;
+          if (Math.abs(this.state.faller.x - crewFt) < 4) {
+            result.credibilityPoints = -20;
+            result.injuryPoints = 100;
+            result.grade = 'F';
           }
         }
 
@@ -227,22 +223,14 @@ export class GameLoop {
     if (this.state.landing) {
       const { horizontalAccuracy, grade } = this.state.landing;
 
-      // Check if faller hit any camera crew
+      // Check if faller hit the camera crew
       const baseCrewScreenX = BUILDING_WIDTH_PX + naturalLandingDistance(level.height) * PIXELS_PER_FOOT
         + level.targetSize + CAMERA_CREW_OFFSET;
-      const cameraCount = level.level >= 14 ? 3 : level.level >= 8 ? 2 : 1;
-      let hitCrew = false;
-      for (let i = 0; i < cameraCount; i++) {
-        const crewScreenX = baseCrewScreenX + i * 45;
-        const crewFt = (crewScreenX - BUILDING_WIDTH_PX) / PIXELS_PER_FOOT;
-        if (Math.abs(f.x - crewFt) < 4) {
-          hitCrew = true;
-          break;
-        }
-      }
+      const crewFt = (baseCrewScreenX - BUILDING_WIDTH_PX) / PIXELS_PER_FOOT;
+      const hitCrew = Math.abs(f.x - crewFt) < 4;
 
       if (f.verticalJump) {
-        crewCallout = 'COLD FEET! HE STAYED ON THE ROOF!';
+        crewCallout = 'HE FELL STRAIGHT OFF THE EDGE!';
       } else if (cdh.jumpedBeforeRolling) {
         crewCallout = "CAMERAS WEREN'T ROLLING!";
       } else if (hitCrew) {

@@ -97,7 +97,7 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
         f.phase = 'FALLING';
         f.vy = 0;
         if (f.verticalJump) {
-          f.vx = 0;
+          f.vx = 3; // slight drift off the building edge
           f.angularVelocity = 0;
         } else {
           f.vx = jumpVXForLean(state.jumpLeanAngle);
@@ -114,11 +114,12 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
       f.y -= f.vy * dt;
 
       if (f.verticalJump) {
-        // Vertical jump: no rotation, no wind, no horizontal movement
+        // Double-tap panic: falls off edge feet first
         f.angle = 0;
-        // Land back on the building edge
-        if (f.y <= state.level.height) {
-          f.y = state.level.height;
+        f.x += f.vx * dt;
+        // Land at ground level (not back on building)
+        if (f.y <= 0) {
+          f.y = 0;
           f.phase = 'LANDED';
         }
       } else {

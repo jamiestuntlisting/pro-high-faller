@@ -11,13 +11,6 @@ interface WindParticle {
   phase: number; // sinusoidal vertical drift phase
 }
 
-/** How many cameras for a given level number */
-function getCameraCount(levelNum: number): number {
-  if (levelNum >= 14) return 3;
-  if (levelNum >= 8) return 2;
-  return 1;
-}
-
 export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D;
   private windParticles: WindParticle[] | null = null;
@@ -91,29 +84,34 @@ export class CanvasRenderer {
       this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY);
     }
 
-    // Camera crews on far side of landing zone (world space)
-    const cameraCount = getCameraCount(state.level.level);
+    // Camera crew on far side of landing zone (world space) — single camera
     const baseCrewX = layout.landingCenterX + state.level.targetSize + CAMERA_CREW_OFFSET;
-    for (let i = 0; i < cameraCount; i++) {
-      const crewX = baseCrewX + i * 45;
-      // Vary the seed per camera so they look different
-      const seed = state.level.level + i * 100;
-      FallerRenderer.drawCameraCrew(
-        ctx, crewX, layout.groundY, fallerWorldY, screenX,
-        seed, state.countdown.cameraRolling,
-      );
-    }
+    FallerRenderer.drawCameraCrew(
+      ctx, baseCrewX, layout.groundY, fallerWorldY, screenX,
+      state.level.level, state.countdown.cameraRolling,
+    );
 
-    // Crew text — rendered above the first crew group in world space
-    this.drawCrewText(ctx, state, baseCrewX, layout.groundY);
+    // Crew text — rendered above crew in world space, or as overlay if off-screen
+    const crewTextWorldY = layout.groundY - 36;
+    const crewTextScreenY = crewTextWorldY - viewY;
+    if (crewTextScreenY < GAME_HEIGHT) {
+      // Crew text visible in world space
+      this.drawCrewText(ctx, state, baseCrewX, layout.groundY);
+    }
 
     // Draw faller (world space)
     FallerRenderer.draw(
       ctx, screenX, fallerWorldY, interpAngle,
       f.phase, f.isTucked, pivotAtFeet, state.elapsedTime,
+      state.level.level, state.jumpTimer,
     );
 
     ctx.restore();
+
+    // If crew text is off-screen (camera at top of tall building), draw as screen overlay
+    if (crewTextScreenY >= GAME_HEIGHT) {
+      this.drawCrewTextOverlay(ctx, state);
+    }
   }
 
   private drawCrewText(
@@ -173,6 +171,59 @@ export class CanvasRenderer {
 
     ctx.fillStyle = color;
     ctx.fillText(text, textX, textY);
+    ctx.restore();
+  }
+
+  /** Draw crew text as a screen-space overlay when crew is off-screen (tall buildings) */
+  private drawCrewTextOverlay(ctx: CanvasRenderingContext2D, state: GameState): void {
+    const text = state.crewCallout || state.crewText;
+    if (!text) return;
+
+    ctx.save();
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Same color logic as drawCrewText
+    let color: string;
+    if (state.crewCallout) {
+      const callout = state.crewCallout;
+      if (callout.includes('PANAVISION') || callout.includes('MISSED') ||
+          callout.includes("WEREN'T ROLLING") || callout.includes('COLD FEET') ||
+          callout.includes('HEAD') || callout.includes('FELL STRAIGHT')) {
+        color = '#FF4444';
+      } else if (callout.includes('BULLSEYE') || callout.includes('DEAD CENTER') ||
+                 callout.includes('PERFECTLY')) {
+        color = '#FFD700';
+      } else {
+        color = '#ffcc00';
+      }
+    } else {
+      if (text.includes("DIDN'T GET") || text.includes("ROLL IT")) {
+        color = '#FF4444';
+      } else if (text.includes('GOT THE SHOT')) {
+        color = '#66CC66';
+      } else if (text.includes('GO!')) {
+        color = '#FF8844';
+      } else if (text.includes('ACTION')) {
+        color = '#FFD700';
+      } else {
+        color = '#aaaaaa';
+      }
+    }
+
+    const x = GAME_WIDTH / 2;
+    const y = GAME_HEIGHT - 20;
+
+    // Shadow
+    ctx.fillStyle = '#000000';
+    ctx.fillText(text, x + 1, y + 1);
+    ctx.fillText(text, x - 1, y - 1);
+    ctx.fillText(text, x + 1, y - 1);
+    ctx.fillText(text, x - 1, y + 1);
+
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
     ctx.restore();
   }
 

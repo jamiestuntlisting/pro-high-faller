@@ -1,12 +1,54 @@
 import type { FallerPhase } from '../types';
 import { RENDER } from '../constants';
 
+// ========================================================
+//  COSTUME SYSTEM — per-level outfits
+// ========================================================
+
+interface Costume {
+  shirt: string;
+  shirtAccent: string;
+  sleeve: string;
+  pants: string;
+  boots: string;
+  cape?: string;       // cape color (undefined = no cape)
+  hat?: { color: string; style: 'cowboy' | 'beanie' | 'hardhat' };
+}
+
+const COSTUMES: Costume[] = [
+  // 1: Red plaid flannel + jeans (classic stuntman)
+  { shirt: '#aa3333', shirtAccent: '#661a1a', sleeve: '#aa3333', pants: '#335588', boots: '#664422' },
+  // 2: Black tee + cargo pants
+  { shirt: '#333333', shirtAccent: '#222222', sleeve: '#333333', pants: '#445533', boots: '#333322' },
+  // 3: Hawaiian shirt + khakis + cowboy hat
+  { shirt: '#cc6622', shirtAccent: '#886611', sleeve: '#cc6622', pants: '#aa9966', boots: '#664422', hat: { color: '#8B7355', style: 'cowboy' } },
+  // 4: Superhero suit + red cape
+  { shirt: '#2244aa', shirtAccent: '#112255', sleeve: '#2244aa', pants: '#2244aa', boots: '#aa2222', cape: '#cc2222' },
+  // 5: Green jacket + dark pants + beanie
+  { shirt: '#336633', shirtAccent: '#224422', sleeve: '#336633', pants: '#333333', boots: '#444444', hat: { color: '#224422', style: 'beanie' } },
+  // 6: Orange jumpsuit
+  { shirt: '#cc6600', shirtAccent: '#993300', sleeve: '#cc6600', pants: '#cc6600', boots: '#222222' },
+  // 7: Leather jacket + cowboy hat
+  { shirt: '#552222', shirtAccent: '#331111', sleeve: '#552222', pants: '#222222', boots: '#222222', hat: { color: '#3a2a1a', style: 'cowboy' } },
+  // 8: Hi-vis vest + hardhat
+  { shirt: '#ccaa22', shirtAccent: '#998811', sleeve: '#ccaa22', pants: '#335588', boots: '#664422', hat: { color: '#cccc22', style: 'hardhat' } },
+  // 9: Black suit (spy)
+  { shirt: '#1a1a1a', shirtAccent: '#111111', sleeve: '#1a1a1a', pants: '#1a1a1a', boots: '#111111' },
+  // 10: Purple + gold cape (fantasy)
+  { shirt: '#663399', shirtAccent: '#442266', sleeve: '#663399', pants: '#442266', boots: '#333333', cape: '#9933cc' },
+];
+
+function getCostume(level: number): Costume {
+  return COSTUMES[(level - 1) % COSTUMES.length];
+}
+
+// ========================================================
+//  MAIN DRAW
+// ========================================================
+
 /**
  * Draw the performer as a pixel-art stick figure on canvas.
- * Uses line drawing for limbs and a circle for the head.
- *
- * For STANDING/LEANING, pivot is at feet (building edge).
- * For everything else, pivot is at center of bounding box.
+ * Costume varies per level. Some levels include capes and hats.
  */
 export function draw(
   ctx: CanvasRenderingContext2D,
@@ -17,6 +59,8 @@ export function draw(
   isTucked: boolean,
   pivotAtFeet: boolean,
   fallTime = 0,
+  levelNum = 1,
+  jumpTimer = 0,
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -31,67 +75,75 @@ export function draw(
   ctx.lineWidth = 1.5;
   ctx.lineCap = 'round';
 
-  // Body dimensions (in local coordinates, 0,0 = pivot)
   const headR = 3;
-  const bodyH = 28; // total height head-to-toe
-
-  // Offset: if pivotAtFeet, body extends upward; otherwise centred
+  const bodyH = 28;
   const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
+  const costume = getCostume(levelNum);
 
   if (phase === 'LANDED') {
-    drawLanded(ctx, oy + bodyH);
+    drawLanded(ctx, oy + bodyH, costume);
   } else if (isTucked && phase === 'FALLING') {
-    drawTucked(ctx, oy, headR, bodyH);
+    drawTucked(ctx, oy, headR, bodyH, costume);
   } else {
-    drawUpright(ctx, oy, headR, bodyH, phase, fallTime);
+    drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume, jumpTimer);
   }
 
   ctx.restore();
 }
 
-/** Standing / falling pose — stuntman in jeans + plaid flannel */
+// ========================================================
+//  UPRIGHT POSE (standing, leaning, jumping, falling spread)
+// ========================================================
+
 function drawUpright(
   ctx: CanvasRenderingContext2D,
   oy: number,
   headR: number,
   bodyH: number,
   phase: FallerPhase,
-  fallTime = 0,
+  fallTime: number,
+  costume: Costume,
+  jumpTimer: number,
 ): void {
   const headCY = oy + headR;
   const shoulderY = oy + headR * 2 + 2;
   const hipY = oy + bodyH * 0.62;
   const footY = oy + bodyH;
 
-  const prevStroke = ctx.strokeStyle;
-  const prevFillStyle = ctx.fillStyle;
+  // === CAPE (behind body — draw first so body is on top) ===
+  if (costume.cape) {
+    drawCape(ctx, shoulderY, hipY, phase, fallTime, costume.cape);
+  }
 
-  // Head (skin tone)
+  // === HEAD (skin tone) ===
   ctx.fillStyle = '#ddbbaa';
   ctx.beginPath();
   ctx.arc(0, headCY, headR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Face marker — small dark dot so you can tell head from feet during rotation
+  // Face marker
   ctx.fillStyle = '#222222';
   ctx.beginPath();
   ctx.arc(1.5, headCY - 0.5, 1, 0, Math.PI * 2);
   ctx.fill();
 
-  // === PLAID FLANNEL SHIRT (torso) ===
-  // Torso body in red flannel
-  ctx.strokeStyle = '#aa3333';
+  // === HAT ===
+  if (costume.hat) {
+    drawHat(ctx, headCY, headR, costume.hat, phase, jumpTimer + fallTime);
+  }
+
+  // === TORSO (shirt) ===
+  ctx.strokeStyle = costume.shirt;
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(0, shoulderY);
   ctx.lineTo(0, hipY);
   ctx.stroke();
 
-  // Plaid cross-lines (dark stripes)
-  ctx.strokeStyle = '#661a1a';
+  // Shirt accent/pattern stripes
+  ctx.strokeStyle = costume.shirtAccent;
   ctx.lineWidth = 1;
   const torsoMid = (shoulderY + hipY) / 2;
-  // Horizontal plaid stripes
   ctx.beginPath();
   ctx.moveTo(-2, shoulderY + 2);
   ctx.lineTo(2, shoulderY + 2);
@@ -101,53 +153,43 @@ function drawUpright(
   ctx.lineTo(2, hipY - 2);
   ctx.stroke();
 
-  // Restore line width for limbs
   ctx.lineWidth = 1.5;
 
   if (phase === 'FALLING' && fallTime > 0) {
-    // === ANIMATED STUNTMAN FALL — arms swing, legs scissor ===
     const armSwing = Math.sin(fallTime * 7);
     const legSwing = Math.sin(fallTime * 5.5);
 
-    // Arms (flannel sleeves)
-    const leftHandX = -8 + armSwing * 2;
-    const leftHandY = shoulderY - 5 + armSwing * 4;
-    const rightHandX = 7 - armSwing * 2;
-    const rightHandY = shoulderY - 5 - armSwing * 4;
-
-    ctx.strokeStyle = '#aa3333';
+    // Arms (sleeve color)
+    ctx.strokeStyle = costume.sleeve;
     ctx.beginPath();
-    ctx.moveTo(leftHandX, leftHandY);
+    ctx.moveTo(-8 + armSwing * 2, shoulderY - 5 + armSwing * 4);
     ctx.lineTo(0, shoulderY);
-    ctx.lineTo(rightHandX, rightHandY);
+    ctx.lineTo(7 - armSwing * 2, shoulderY - 5 - armSwing * 4);
     ctx.stroke();
 
-    // Legs (blue jeans)
+    // Legs (pants color)
     const kneeY = hipY + (footY - hipY) * 0.5;
-
     const lKneeX = -2 + legSwing * 3;
     const lFootX = -4 + legSwing * 4;
     const lFootY = footY - Math.abs(legSwing) * 2;
+    const rKneeX = 2 - legSwing * 3;
+    const rFootX = 4 - legSwing * 4;
+    const rFootY = footY - Math.abs(legSwing) * 2;
 
-    ctx.strokeStyle = '#335588';
+    ctx.strokeStyle = costume.pants;
     ctx.beginPath();
     ctx.moveTo(0, hipY);
     ctx.lineTo(lKneeX, kneeY);
     ctx.lineTo(lFootX, lFootY);
     ctx.stroke();
-
-    const rKneeX = 2 - legSwing * 3;
-    const rFootX = 4 - legSwing * 4;
-    const rFootY = footY - Math.abs(legSwing) * 2;
-
     ctx.beginPath();
     ctx.moveTo(0, hipY);
     ctx.lineTo(rKneeX, kneeY);
     ctx.lineTo(rFootX, rFootY);
     ctx.stroke();
 
-    // Boot marks (brown boots)
-    ctx.strokeStyle = '#664422';
+    // Boots
+    ctx.strokeStyle = costume.boots;
     ctx.beginPath();
     ctx.moveTo(lFootX - 2, lFootY);
     ctx.lineTo(lFootX + 2, lFootY);
@@ -155,24 +197,24 @@ function drawUpright(
     ctx.lineTo(rFootX + 2, rFootY);
     ctx.stroke();
   } else if (phase === 'JUMPING') {
-    // Arms spread (flannel sleeves)
-    ctx.strokeStyle = '#aa3333';
+    // Arms spread
+    ctx.strokeStyle = costume.sleeve;
     ctx.beginPath();
     ctx.moveTo(-9, shoulderY - 8);
     ctx.lineTo(0, shoulderY);
     ctx.lineTo(7, shoulderY - 2);
     ctx.stroke();
 
-    // Legs (blue jeans)
-    ctx.strokeStyle = '#335588';
+    // Legs
+    ctx.strokeStyle = costume.pants;
     ctx.beginPath();
     ctx.moveTo(-5, footY);
     ctx.lineTo(0, hipY);
     ctx.lineTo(5, footY);
     ctx.stroke();
 
-    // Brown boots
-    ctx.strokeStyle = '#664422';
+    // Boots
+    ctx.strokeStyle = costume.boots;
     ctx.beginPath();
     ctx.moveTo(-7, footY);
     ctx.lineTo(-3, footY);
@@ -180,24 +222,24 @@ function drawUpright(
     ctx.lineTo(7, footY);
     ctx.stroke();
   } else {
-    // Arms down/neutral (flannel sleeves)
-    ctx.strokeStyle = '#aa3333';
+    // Standing / leaning — arms down
+    ctx.strokeStyle = costume.sleeve;
     ctx.beginPath();
     ctx.moveTo(-6, hipY - 2);
     ctx.lineTo(0, shoulderY);
     ctx.lineTo(6, hipY - 2);
     ctx.stroke();
 
-    // Legs (blue jeans)
-    ctx.strokeStyle = '#335588';
+    // Legs
+    ctx.strokeStyle = costume.pants;
     ctx.beginPath();
     ctx.moveTo(-5, footY);
     ctx.lineTo(0, hipY);
     ctx.lineTo(5, footY);
     ctx.stroke();
 
-    // Brown boots
-    ctx.strokeStyle = '#664422';
+    // Boots
+    ctx.strokeStyle = costume.boots;
     ctx.beginPath();
     ctx.moveTo(-7, footY);
     ctx.lineTo(-3, footY);
@@ -205,58 +247,189 @@ function drawUpright(
     ctx.lineTo(7, footY);
     ctx.stroke();
   }
-
-  // Restore original styles
-  ctx.strokeStyle = prevStroke;
-  ctx.fillStyle = prevFillStyle;
 }
 
-/** Tucked cannonball pose */
+// ========================================================
+//  CAPE
+// ========================================================
+
+function drawCape(
+  ctx: CanvasRenderingContext2D,
+  shoulderY: number,
+  hipY: number,
+  phase: FallerPhase,
+  fallTime: number,
+  capeColor: string,
+): void {
+  ctx.strokeStyle = capeColor;
+  ctx.lineWidth = 2.5;
+
+  if (phase === 'FALLING' || phase === 'JUMPING') {
+    // Cape billows upward (trails behind the fall direction)
+    const wave1 = Math.sin(fallTime * 4) * 3;
+    const wave2 = Math.sin(fallTime * 6 + 1) * 2;
+    const capeLen = 18;
+
+    ctx.beginPath();
+    ctx.moveTo(-1, shoulderY);
+    ctx.quadraticCurveTo(-3 + wave1, shoulderY - capeLen * 0.5, -4 + wave2, shoulderY - capeLen);
+    ctx.stroke();
+
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(1, shoulderY);
+    ctx.quadraticCurveTo(-1 + wave1 * 0.6, shoulderY - capeLen * 0.4, -2 + wave2 * 0.7, shoulderY - capeLen + 3);
+    ctx.stroke();
+  } else {
+    // Standing/leaning: cape hangs down behind
+    const capeBottom = hipY + 8;
+    ctx.beginPath();
+    ctx.moveTo(-1, shoulderY);
+    ctx.lineTo(-2, capeBottom);
+    ctx.stroke();
+
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(1, shoulderY);
+    ctx.lineTo(0, capeBottom);
+    ctx.stroke();
+  }
+}
+
+// ========================================================
+//  HAT
+// ========================================================
+
+function drawHat(
+  ctx: CanvasRenderingContext2D,
+  headCY: number,
+  headR: number,
+  hat: { color: string; style: 'cowboy' | 'beanie' | 'hardhat' },
+  phase: FallerPhase,
+  timeSinceJump: number,
+): void {
+  ctx.fillStyle = hat.color;
+
+  if (phase === 'JUMPING' || phase === 'FALLING') {
+    // Hat flies off — drift upward and to the side
+    if (timeSinceJump > 2.0) return; // gone off screen
+
+    const drift = timeSinceJump;
+    const ox = drift * 10;
+    const oy2 = -drift * 18;
+    const spin = drift * 3;
+
+    ctx.save();
+    ctx.translate(ox, headCY - headR - 2 + oy2);
+    ctx.rotate(spin);
+    drawHatShape(ctx, hat.style);
+    ctx.restore();
+    return;
+  }
+
+  // Hat on head
+  ctx.save();
+  ctx.translate(0, headCY - headR - 2);
+  drawHatShape(ctx, hat.style);
+  ctx.restore();
+}
+
+function drawHatShape(ctx: CanvasRenderingContext2D, style: 'cowboy' | 'beanie' | 'hardhat'): void {
+  if (style === 'cowboy') {
+    ctx.fillRect(-5, 0, 10, 1.5);
+    ctx.fillRect(-2.5, -3.5, 5, 3.5);
+  } else if (style === 'beanie') {
+    ctx.beginPath();
+    ctx.arc(0, -1, 3.5, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-3.5, -0.5, 7, 1);
+  } else if (style === 'hardhat') {
+    ctx.fillRect(-4.5, 0, 9, 1.5);
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, Math.PI, 0);
+    ctx.fill();
+  }
+}
+
+// ========================================================
+//  TUCKED (cannonball) POSE
+// ========================================================
+
 function drawTucked(
   ctx: CanvasRenderingContext2D,
   oy: number,
   headR: number,
   bodyH: number,
+  costume: Costume,
 ): void {
   const cx = 0;
   const cy = oy + bodyH / 2;
 
-  // Compact ball
+  // Ball outline in shirt color
+  ctx.strokeStyle = costume.shirt;
   ctx.beginPath();
   ctx.arc(cx, cy, 7, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Head poking out the top
+  // Head poking out
+  ctx.fillStyle = '#ddbbaa';
   ctx.beginPath();
   ctx.arc(cx, cy - 6, headR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Knees indication
+  // Knees (pants color)
+  ctx.fillStyle = costume.pants;
   ctx.beginPath();
   ctx.arc(cx - 3, cy + 3, 2, 0, Math.PI * 2);
   ctx.arc(cx + 3, cy + 3, 2, 0, Math.PI * 2);
   ctx.fill();
+
+  // Cape trails behind when tucked
+  if (costume.cape) {
+    ctx.strokeStyle = costume.cape;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 5);
+    ctx.lineTo(cx - 3, cy - 14);
+    ctx.stroke();
+  }
 }
 
-/** Lying flat on the catcher surface — sunk slightly into the mat */
-function drawLanded(ctx: CanvasRenderingContext2D, groundLocalY: number): void {
-  const gy = groundLocalY - 1; // +1px into the mat surface compared to before
-  // Head
+// ========================================================
+//  LANDED POSE
+// ========================================================
+
+function drawLanded(ctx: CanvasRenderingContext2D, groundLocalY: number, costume: Costume): void {
+  const gy = groundLocalY - 1;
+
+  // Head (skin)
+  ctx.fillStyle = '#ddbbaa';
   ctx.beginPath();
   ctx.arc(-8, gy - 2, 2.5, 0, Math.PI * 2);
   ctx.fill();
-  // Body line
+
+  // Body (shirt color)
+  ctx.strokeStyle = costume.shirt;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(-5, gy);
+  ctx.lineTo(3, gy);
+  ctx.stroke();
+
+  // Legs (pants color)
+  ctx.strokeStyle = costume.pants;
+  ctx.beginPath();
+  ctx.moveTo(3, gy);
   ctx.lineTo(8, gy);
   ctx.stroke();
-  // Arm up
+
+  // Arm up (sleeve)
+  ctx.strokeStyle = costume.sleeve;
   ctx.beginPath();
-  ctx.moveTo(2, gy);
-  ctx.lineTo(5, gy - 5);
+  ctx.moveTo(0, gy);
+  ctx.lineTo(3, gy - 5);
   ctx.stroke();
 }
-
 
 // ========================================================
 //  CAMERA CREW — film camera on tripod + crew members
@@ -272,7 +445,6 @@ export function drawCameraCrew(
   levelNum: number,
   isRolling: boolean,
 ): void {
-  // Vary crew position per level/camera seed
   const crewOffset = ((levelNum * 13) % 50) - 25;
   const baseX = crewX + crewOffset;
 
@@ -310,7 +482,7 @@ export function drawCameraCrew(
   ctx.fillStyle = '#888888';
   ctx.fillRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH);
 
-  // Lens — triangle at front pointing toward faller (+x direction)
+  // Lens — triangle at front
   ctx.fillStyle = '#555555';
   ctx.beginPath();
   ctx.moveTo(bodyW / 2, -bodyH / 2 - 1);
@@ -319,17 +491,17 @@ export function drawCameraCrew(
   ctx.closePath();
   ctx.fill();
 
-  // Lens glass — dark circle at the tip
+  // Lens glass
   ctx.fillStyle = '#222222';
   ctx.beginPath();
   ctx.arc(bodyW / 2 + 5, 0, 2.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Film magazine at rear — small bump at top-rear
+  // Film magazine
   ctx.fillStyle = '#666666';
   ctx.fillRect(-bodyW / 2 - 4, -bodyH / 2 - 3, 5, 4);
 
-  // Recording light — red dot on top when camera is rolling
+  // Recording light
   if (isRolling) {
     ctx.fillStyle = '#FF0000';
     ctx.beginPath();
@@ -339,17 +511,16 @@ export function drawCameraCrew(
 
   ctx.restore();
 
-  // === CAMERA OPERATOR (standing behind camera) ===
+  // === CAMERA OPERATOR ===
   drawCrewPerson(ctx, baseX, groundY, '#CCCCCC');
 
-  // === DIRECTOR (further out, with arm raised) ===
+  // === DIRECTOR ===
   const dirX = baseX + 22;
   drawCrewPerson(ctx, dirX, groundY, '#AAAAAA', true);
 
   ctx.restore();
 }
 
-/** Draw a simple stick-figure crew member */
 function drawCrewPerson(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -367,20 +538,16 @@ function drawCrewPerson(
   ctx.fillStyle = color;
   ctx.lineWidth = 1.5;
 
-  // Head
   ctx.beginPath();
   ctx.arc(x, headY, headR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Spine
   ctx.beginPath();
   ctx.moveTo(x, shoulderY);
   ctx.lineTo(x, hipY);
   ctx.stroke();
 
-  // Arms
   if (armRaised) {
-    // One arm up (directing)
     ctx.beginPath();
     ctx.moveTo(x - 5, shoulderY + 4);
     ctx.lineTo(x, shoulderY);
@@ -394,7 +561,6 @@ function drawCrewPerson(
     ctx.stroke();
   }
 
-  // Legs
   ctx.beginPath();
   ctx.moveTo(x - 4, footY);
   ctx.lineTo(x, hipY);
