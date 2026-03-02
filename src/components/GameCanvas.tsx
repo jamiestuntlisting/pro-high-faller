@@ -46,6 +46,7 @@ export function GameCanvas({
       style={{
         width: '100%',
         maxWidth: '768px',
+        maxHeight: 'calc(100dvh - 4px)',
         imageRendering: 'pixelated',
         aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
         display: 'block',
