@@ -18,7 +18,7 @@ function jumpVXForLean(leanDeg: number): number {
   return capVX + (rawVX - capVX) * 0.4;
 }
 
-export function update(state: GameState, dt: number, input: InputSnapshot): void {
+export function update(state: GameState, dt: number, _input: InputSnapshot): void {
   const f = state.faller;
 
   // Save previous position for interpolation
