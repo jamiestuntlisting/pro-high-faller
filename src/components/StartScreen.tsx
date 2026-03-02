@@ -57,6 +57,12 @@ export function StartScreen({
             <span style={styles.detailLabel}>HEIGHT:</span>
             <span>{level.height} ft</span>
           </div>
+          {level.jumpType && level.jumpType !== 'building' && (
+            <div style={styles.detailRow}>
+              <span style={styles.detailLabel}>JUMP FROM:</span>
+              <span style={{ textTransform: 'uppercase' }}>{level.jumpType}</span>
+            </div>
+          )}
           <div style={styles.detailRow}>
             <span style={styles.detailLabel}>LANDING:</span>
             <span style={{ textTransform: 'uppercase' }}>{level.targetType}</span>

@@ -62,8 +62,15 @@ export function draw(
     ctx.fillText('-', gx, groundY);
   }
 
-  // === BUILDING ===
-  drawBuilding(ctx, buildingEdgeX, buildingTopY, groundY);
+  // === STRUCTURE (building, helicopter, or balloon) ===
+  const jumpType = level.jumpType || 'building';
+  if (jumpType === 'helicopter') {
+    drawHelicopter(ctx, buildingEdgeX, buildingTopY);
+  } else if (jumpType === 'balloon') {
+    drawBalloon(ctx, buildingEdgeX, buildingTopY);
+  } else {
+    drawBuilding(ctx, buildingEdgeX, buildingTopY, groundY, level.height);
+  }
 
   // === LANDING ZONE ===
   drawLandingZone(ctx, level, layout, landedInfo ?? null);
@@ -74,6 +81,7 @@ function drawBuilding(
   edgeX: number,
   topY: number,
   groundY: number,
+  heightFt: number,
 ): void {
   ctx.font = '7px monospace';
   const cw = 6;
@@ -83,29 +91,54 @@ function drawBuilding(
   const startRow = Math.floor(topY / ch);
   const endRow = Math.floor(groundY / ch);
 
+
+  // Floor height: ~10ft per floor = 40px = 5 rows
+  const rowsPerFloor = 5;
+  const totalFloors = Math.max(1, Math.round(heightFt / 10));
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
   for (let row = startRow; row < endRow; row++) {
+    const rowInBuilding = row - startRow;
+    const floorFromTop = Math.floor(rowInBuilding / rowsPerFloor);
+    const rowInFloor = rowInBuilding % rowsPerFloor;
+    const floorNum = totalFloors - floorFromTop;
+
     for (let col = 0; col < cols; col++) {
       const y = row * ch;
       const x = col * cw;
+
       if (col === cols - 1) {
+        // Right edge
         ctx.fillStyle = RENDER.ASCII_MED;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
         ctx.fillText('|', x, y);
+      } else if (rowInFloor === 0 && col < cols - 1) {
+        // Floor separator line
+        ctx.fillStyle = RENDER.ASCII_DIM;
+        ctx.fillText('-', x, y);
+      } else if (rowInFloor >= 1 && rowInFloor <= 3 && col >= 1 && col <= cols - 3 && (col % 3 === 1)) {
+        // Window columns — lit or dark
+        const isLit = ((floorFromTop * 7 + col * 3) % 5) < 2;
+        ctx.fillStyle = isLit ? '#445566' : '#1a1a22';
+        ctx.fillText('░', x, y);
       } else {
-        const isWindow = (row % 3 === 1) && (col % 3 === 1);
-        ctx.fillStyle = isWindow ? RENDER.ASCII_MED : RENDER.ASCII_DIM;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(isWindow ? '░' : '#', x, y);
+        ctx.fillStyle = RENDER.ASCII_DIM;
+        ctx.fillText('#', x, y);
       }
+    }
+
+    // Floor number label on every 5th floor (right side inside building)
+    if (rowInFloor === 2 && floorNum > 0 && floorNum % 5 === 0 && floorNum < totalFloors) {
+      ctx.fillStyle = '#444444';
+      ctx.font = '6px monospace';
+      ctx.fillText(String(floorNum), 2, row * ch);
+      ctx.font = '7px monospace';
     }
   }
 
   // Rooftop
   ctx.fillStyle = RENDER.ASCII_BRIGHT;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
   for (let rx = 0; rx < edgeX; rx += cw) {
     ctx.fillText('=', rx, topY);
   }
@@ -113,6 +146,163 @@ function drawBuilding(
   // Corner
   ctx.fillStyle = RENDER.ASCII_WHITE;
   ctx.fillText(']', edgeX - cw, topY);
+}
+
+function drawHelicopter(
+  ctx: CanvasRenderingContext2D,
+  edgeX: number,
+  topY: number,
+): void {
+  // Helicopter centered above where the performer stands
+  const cx = edgeX - 10;
+  const cy = topY - 10;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  // Main rotor — spinning line
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = 1.5;
+  const time = Date.now() / 80;
+  const rotorLen = 30;
+  ctx.beginPath();
+  ctx.moveTo(cx - rotorLen * Math.cos(time), cy - 18);
+  ctx.lineTo(cx + rotorLen * Math.cos(time), cy - 18);
+  ctx.stroke();
+
+  // Rotor mast
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 18);
+  ctx.lineTo(cx, cy - 10);
+  ctx.stroke();
+
+  // Body — rounded rectangle shape
+  ctx.fillStyle = '#444444';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 5, 18, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cockpit windshield
+  ctx.fillStyle = '#556677';
+  ctx.beginPath();
+  ctx.ellipse(cx + 10, cy - 6, 6, 5, 0.2, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.fill();
+
+  // Tail boom
+  ctx.strokeStyle = '#444444';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 16, cy - 5);
+  ctx.lineTo(cx - 35, cy - 12);
+  ctx.stroke();
+
+  // Tail rotor
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 35, cy - 18);
+  ctx.lineTo(cx - 35, cy - 6);
+  ctx.stroke();
+
+  // Skids
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = 1.5;
+  // Left skid strut
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, cy + 2);
+  ctx.lineTo(cx - 10, cy + 8);
+  ctx.stroke();
+  // Right skid strut
+  ctx.beginPath();
+  ctx.moveTo(cx + 8, cy + 2);
+  ctx.lineTo(cx + 6, cy + 8);
+  ctx.stroke();
+  // Skid bars
+  ctx.beginPath();
+  ctx.moveTo(cx - 16, cy + 8);
+  ctx.lineTo(cx + 12, cy + 8);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBalloon(
+  ctx: CanvasRenderingContext2D,
+  edgeX: number,
+  topY: number,
+): void {
+  const cx = edgeX - 5;
+  const basketY = topY + 2;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  // Envelope (the big balloon part)
+  const envCY = basketY - 40;
+  const envRX = 22;
+  const envRY = 28;
+
+  // Envelope body — gradient stripes
+  const stripeColors = ['#cc3333', '#cc8833', '#cccc33', '#cc3333', '#cc8833'];
+  const stripeWidth = envRX * 2 / stripeColors.length;
+  for (let i = 0; i < stripeColors.length; i++) {
+    ctx.fillStyle = stripeColors[i];
+    const sx = cx - envRX + i * stripeWidth;
+    ctx.beginPath();
+    // clip to ellipse by drawing arcs
+    for (let py = envCY - envRY; py <= envCY + envRY; py += 1) {
+      const dy = py - envCY;
+      const halfW = envRX * Math.sqrt(1 - (dy * dy) / (envRY * envRY));
+      const lx = cx - halfW;
+      const rx = cx + halfW;
+      const clipLeft = Math.max(sx, lx);
+      const clipRight = Math.min(sx + stripeWidth, rx);
+      if (clipRight > clipLeft) {
+        ctx.fillRect(clipLeft, py, clipRight - clipLeft, 1);
+      }
+    }
+  }
+
+  // Envelope outline
+  ctx.strokeStyle = '#884422';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(cx, envCY, envRX, envRY, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Ropes from envelope to basket
+  ctx.strokeStyle = '#886644';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 10, envCY + envRY - 2);
+  ctx.lineTo(cx - 6, basketY);
+  ctx.moveTo(cx + 10, envCY + envRY - 2);
+  ctx.lineTo(cx + 6, basketY);
+  ctx.stroke();
+
+  // Basket
+  ctx.fillStyle = '#664422';
+  ctx.fillRect(cx - 8, basketY, 16, 10);
+  // Basket rim
+  ctx.strokeStyle = '#886644';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, basketY);
+  ctx.lineTo(cx + 9, basketY);
+  ctx.stroke();
+  // Basket weave pattern
+  ctx.strokeStyle = '#553311';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, basketY + 4);
+  ctx.lineTo(cx + 8, basketY + 4);
+  ctx.moveTo(cx - 8, basketY + 7);
+  ctx.lineTo(cx + 8, basketY + 7);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function drawLandingZone(

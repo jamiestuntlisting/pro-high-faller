@@ -23,6 +23,7 @@ export interface FallerState {
 // === LEVEL CONFIG ===
 
 export type TargetType = 'airbag' | 'boxes' | 'water';
+export type JumpType = 'building' | 'helicopter' | 'balloon';
 
 export interface LevelConfig {
   level: number;
@@ -36,6 +37,7 @@ export interface LevelConfig {
   showTimingHints: boolean;
   pay: number;             // Base pay for the job
   coordinatorLine: string; // Briefing dialogue
+  jumpType?: JumpType;     // Where the performer jumps from (default: 'building')
 }
 
 // === COUNTDOWN ===
