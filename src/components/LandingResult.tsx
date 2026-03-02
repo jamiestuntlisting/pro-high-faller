@@ -34,8 +34,14 @@ export function LandingResult({
     return () => window.removeEventListener('keydown', handler);
   }, [passed, onNextLevel, onRetry]);
 
+  const handleTap = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON') return;
+    passed ? onNextLevel() : onRetry();
+  };
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onClick={handleTap}>
       <div style={{ ...styles.panel, borderColor: passed ? '#55aa55' : '#aa4444' }}>
         <h2 style={{ ...styles.grade, color: gradeColor(result.grade) }}>
           {result.grade}

@@ -116,6 +116,7 @@ export interface HudSnapshot {
   isTucked: boolean;
   wind: number;
   credibility: number;
+  levelNumber: number;
   timingHint: string | null;
   landingCallout: string | null;
   countdownText: string | null;

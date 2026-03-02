@@ -33,8 +33,14 @@ export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibil
     setScores(getHighScores());
   };
 
+  const handleTap = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT') return;
+    if (saved || !qualifies) onRestart();
+  };
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onClick={handleTap}>
       <div style={styles.panel}>
         <h2 style={styles.title}>RETIRED</h2>
         <div style={styles.subtitle}>Your body gave out.</div>

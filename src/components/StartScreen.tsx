@@ -30,8 +30,14 @@ export function StartScreen({
     return () => window.removeEventListener('keydown', handler);
   }, [onStart]);
 
+  const handleTap = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    onStart();
+  };
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onClick={handleTap}>
       <h1 style={styles.title}>STUNTLISTING'S</h1>
       <h2 style={styles.subtitle}>PRO STUNT HIGH FALLER</h2>
 

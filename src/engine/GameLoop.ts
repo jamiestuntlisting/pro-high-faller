@@ -322,6 +322,7 @@ export class GameLoop {
       isTucked: f.isTucked,
       wind: level.wind,
       credibility: 0,
+      levelNumber: level.level,
       timingHint,
       landingCallout: null,
       countdownText: null,

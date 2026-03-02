@@ -63,12 +63,12 @@ export const CAMERA_CREW_OFFSET = 60;
 export function landingZoneHeight(heightFt: number, targetType: 'airbag' | 'boxes' | 'water'): number {
   if (targetType === 'water') {
     // Water depth scales subtly
-    return Math.round(6 + (heightFt - 20) * 0.1);
+    return Math.round((6 + (heightFt - 20) * 0.1) * 3);
   }
   const base = targetType === 'airbag' ? 10 : 8;
   // Scale up: every 10ft above 30ft adds ~2px of mat height
   const extra = Math.max(0, (heightFt - 30) * 0.2);
-  return Math.round(base + extra);
+  return Math.round((base + extra) * 3);
 }
 
 /**

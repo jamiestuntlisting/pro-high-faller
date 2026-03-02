@@ -127,10 +127,10 @@ export class CanvasRenderer {
 
     // Position above the first crew group's director (offset +10px from base, above heads)
     const textX = baseCrewX + 10;
-    const textY = groundY - 30;
+    const textY = groundY - 36;
 
     ctx.save();
-    ctx.font = 'bold 7px monospace';
+    ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 

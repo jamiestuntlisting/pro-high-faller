@@ -10,6 +10,11 @@ export function HUD({ data, credibility }: Props) {
 
   return (
     <div style={styles.overlay}>
+      {/* Top-left: level number */}
+      <div style={styles.topLeft}>
+        <span style={styles.dim}>JOB</span> #{data.levelNumber}
+      </div>
+
       {/* Top-right: height */}
       <div style={styles.topRight}>
         <span style={styles.dim}>HT:</span> {Math.round(data.height)}ft
@@ -57,6 +62,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dim: {
     color: '#555555',
+  },
+  topLeft: {
+    position: 'absolute',
+    top: '4px',
+    left: '6px',
   },
   topRight: {
     position: 'absolute',

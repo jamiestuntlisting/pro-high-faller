@@ -49,7 +49,7 @@ export function draw(
   ctx.restore();
 }
 
-/** Standing / falling pose — arms swing and legs scissor during fall like a stuntman */
+/** Standing / falling pose — stuntman in jeans + plaid flannel */
 function drawUpright(
   ctx: CanvasRenderingContext2D,
   oy: number,
@@ -63,72 +63,91 @@ function drawUpright(
   const hipY = oy + bodyH * 0.62;
   const footY = oy + bodyH;
 
-  // Head (bright filled circle)
+  const prevStroke = ctx.strokeStyle;
+  const prevFillStyle = ctx.fillStyle;
+
+  // Head (skin tone)
+  ctx.fillStyle = '#ddbbaa';
   ctx.beginPath();
   ctx.arc(0, headCY, headR, 0, Math.PI * 2);
   ctx.fill();
 
   // Face marker — small dark dot so you can tell head from feet during rotation
-  const prevFill = ctx.fillStyle;
   ctx.fillStyle = '#222222';
   ctx.beginPath();
   ctx.arc(1.5, headCY - 0.5, 1, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = prevFill;
 
-  // Spine (neck to hip)
+  // === PLAID FLANNEL SHIRT (torso) ===
+  // Torso body in red flannel
+  ctx.strokeStyle = '#aa3333';
+  ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(0, shoulderY);
   ctx.lineTo(0, hipY);
   ctx.stroke();
 
-  // Belt / waistline — visual divider between upper and lower body
+  // Plaid cross-lines (dark stripes)
+  ctx.strokeStyle = '#661a1a';
+  ctx.lineWidth = 1;
+  const torsoMid = (shoulderY + hipY) / 2;
+  // Horizontal plaid stripes
   ctx.beginPath();
-  ctx.moveTo(-3, hipY);
-  ctx.lineTo(3, hipY);
+  ctx.moveTo(-2, shoulderY + 2);
+  ctx.lineTo(2, shoulderY + 2);
+  ctx.moveTo(-2, torsoMid);
+  ctx.lineTo(2, torsoMid);
+  ctx.moveTo(-2, hipY - 2);
+  ctx.lineTo(2, hipY - 2);
   ctx.stroke();
+
+  // Restore line width for limbs
+  ctx.lineWidth = 1.5;
 
   if (phase === 'FALLING' && fallTime > 0) {
     // === ANIMATED STUNTMAN FALL — arms swing, legs scissor ===
-    const armSwing = Math.sin(fallTime * 7);   // ~1.1 cycles/sec
-    const legSwing = Math.sin(fallTime * 5.5); // slightly offset frequency
+    const armSwing = Math.sin(fallTime * 7);
+    const legSwing = Math.sin(fallTime * 5.5);
 
-    // Arms swing from shoulders — windmilling motion
+    // Arms (flannel sleeves)
     const leftHandX = -8 + armSwing * 2;
     const leftHandY = shoulderY - 5 + armSwing * 4;
     const rightHandX = 7 - armSwing * 2;
     const rightHandY = shoulderY - 5 - armSwing * 4;
 
+    ctx.strokeStyle = '#aa3333';
     ctx.beginPath();
     ctx.moveTo(leftHandX, leftHandY);
     ctx.lineTo(0, shoulderY);
     ctx.lineTo(rightHandX, rightHandY);
     ctx.stroke();
 
-    // Legs scissor with bent knees
+    // Legs (blue jeans)
     const kneeY = hipY + (footY - hipY) * 0.5;
 
-    // Left leg: hip → knee → foot
     const lKneeX = -2 + legSwing * 3;
     const lFootX = -4 + legSwing * 4;
     const lFootY = footY - Math.abs(legSwing) * 2;
+
+    ctx.strokeStyle = '#335588';
     ctx.beginPath();
     ctx.moveTo(0, hipY);
     ctx.lineTo(lKneeX, kneeY);
     ctx.lineTo(lFootX, lFootY);
     ctx.stroke();
 
-    // Right leg: opposite phase
     const rKneeX = 2 - legSwing * 3;
     const rFootX = 4 - legSwing * 4;
     const rFootY = footY - Math.abs(legSwing) * 2;
+
     ctx.beginPath();
     ctx.moveTo(0, hipY);
     ctx.lineTo(rKneeX, kneeY);
     ctx.lineTo(rFootX, rFootY);
     ctx.stroke();
 
-    // Boot marks on animated feet
+    // Boot marks (brown boots)
+    ctx.strokeStyle = '#664422';
     ctx.beginPath();
     ctx.moveTo(lFootX - 2, lFootY);
     ctx.lineTo(lFootX + 2, lFootY);
@@ -136,21 +155,24 @@ function drawUpright(
     ctx.lineTo(rFootX + 2, rFootY);
     ctx.stroke();
   } else if (phase === 'JUMPING') {
-    // Static spread during the hop off the building
+    // Arms spread (flannel sleeves)
+    ctx.strokeStyle = '#aa3333';
     ctx.beginPath();
     ctx.moveTo(-9, shoulderY - 8);
     ctx.lineTo(0, shoulderY);
     ctx.lineTo(7, shoulderY - 2);
     ctx.stroke();
 
-    // Straight legs
+    // Legs (blue jeans)
+    ctx.strokeStyle = '#335588';
     ctx.beginPath();
     ctx.moveTo(-5, footY);
     ctx.lineTo(0, hipY);
     ctx.lineTo(5, footY);
     ctx.stroke();
 
-    // Boot marks
+    // Brown boots
+    ctx.strokeStyle = '#664422';
     ctx.beginPath();
     ctx.moveTo(-7, footY);
     ctx.lineTo(-3, footY);
@@ -158,21 +180,24 @@ function drawUpright(
     ctx.lineTo(7, footY);
     ctx.stroke();
   } else {
-    // Arms down/neutral (STANDING, LEANING)
+    // Arms down/neutral (flannel sleeves)
+    ctx.strokeStyle = '#aa3333';
     ctx.beginPath();
     ctx.moveTo(-6, hipY - 2);
     ctx.lineTo(0, shoulderY);
     ctx.lineTo(6, hipY - 2);
     ctx.stroke();
 
-    // Straight legs
+    // Legs (blue jeans)
+    ctx.strokeStyle = '#335588';
     ctx.beginPath();
     ctx.moveTo(-5, footY);
     ctx.lineTo(0, hipY);
     ctx.lineTo(5, footY);
     ctx.stroke();
 
-    // Boot marks
+    // Brown boots
+    ctx.strokeStyle = '#664422';
     ctx.beginPath();
     ctx.moveTo(-7, footY);
     ctx.lineTo(-3, footY);
@@ -180,6 +205,10 @@ function drawUpright(
     ctx.lineTo(7, footY);
     ctx.stroke();
   }
+
+  // Restore original styles
+  ctx.strokeStyle = prevStroke;
+  ctx.fillStyle = prevFillStyle;
 }
 
 /** Tucked cannonball pose */
@@ -252,52 +281,59 @@ export function drawCameraCrew(
 
   // === CAMERA ON TRIPOD ===
   const camX = baseX - 14;
-  const camY = groundY - 16;
+  const camY = groundY - 18;
 
   // Tripod legs
   ctx.strokeStyle = '#888888';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(camX, camY + 4);
-  ctx.lineTo(camX - 7, groundY);
-  ctx.moveTo(camX, camY + 4);
-  ctx.lineTo(camX + 7, groundY);
-  ctx.moveTo(camX, camY + 4);
+  ctx.moveTo(camX, camY + 5);
+  ctx.lineTo(camX - 8, groundY);
+  ctx.moveTo(camX, camY + 5);
+  ctx.lineTo(camX + 8, groundY);
+  ctx.moveTo(camX, camY + 5);
   ctx.lineTo(camX, groundY);
   ctx.stroke();
 
-  // Camera body — tilts subtly toward the faller
+  // Camera body — tilts to track the faller
   const dx = fallerScreenX - camX;
   const dy = fallerScreenY - camY;
   const rawAngle = Math.atan2(dy, dx);
-  // Clamp to a subtle tilt so the camera stays looking like a camera
-  const clamped = Math.max(-0.5, Math.min(0.15, rawAngle));
 
   ctx.save();
   ctx.translate(camX, camY);
-  ctx.rotate(clamped);
+  ctx.rotate(rawAngle);
 
-  // Camera body — long horizontal rectangle (film camera)
+  // Camera body — rectangle with 1:1.6 aspect ratio
+  const bodyW = 16;
+  const bodyH = 10;
   ctx.fillStyle = '#888888';
-  ctx.fillRect(-6, -3, 22, 7);
+  ctx.fillRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH);
 
-  // Lens housing at front (pointing toward faller = +x direction after rotation)
-  ctx.fillStyle = '#444444';
-  ctx.fillRect(16, -4, 6, 9);
+  // Lens — triangle at front pointing toward faller (+x direction)
+  ctx.fillStyle = '#555555';
+  ctx.beginPath();
+  ctx.moveTo(bodyW / 2, -bodyH / 2 - 1);
+  ctx.lineTo(bodyW / 2 + 8, 0);
+  ctx.lineTo(bodyW / 2, bodyH / 2 + 1);
+  ctx.closePath();
+  ctx.fill();
 
-  // Lens front — dark glass
-  ctx.fillStyle = '#111111';
-  ctx.fillRect(21, -2, 2, 5);
+  // Lens glass — dark circle at the tip
+  ctx.fillStyle = '#222222';
+  ctx.beginPath();
+  ctx.arc(bodyW / 2 + 5, 0, 2.5, 0, Math.PI * 2);
+  ctx.fill();
 
   // Film magazine at rear — small bump at top-rear
   ctx.fillStyle = '#666666';
-  ctx.fillRect(-8, -6, 5, 4);
+  ctx.fillRect(-bodyW / 2 - 4, -bodyH / 2 - 3, 5, 4);
 
   // Recording light — red dot on top when camera is rolling
   if (isRolling) {
     ctx.fillStyle = '#FF0000';
     ctx.beginPath();
-    ctx.arc(8, -5, 1.5, 0, Math.PI * 2);
+    ctx.arc(0, -bodyH / 2 - 2, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
