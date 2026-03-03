@@ -89,7 +89,7 @@ export function draw(
     if (isTucked && phase === 'FALLING') {
       drawTucked(ctx, oy, headR, bodyH, costume);
     } else {
-      drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume, jumpTimer);
+      drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume);
     }
 
     // Hat on head (STANDING/LEANING) — stays in rotated space
@@ -140,7 +140,6 @@ function drawUpright(
   phase: FallerPhase,
   fallTime: number,
   costume: Costume,
-  jumpTimer: number,
 ): void {
   const headCY = oy + headR;
   const shoulderY = oy + headR * 2 + 2;
@@ -666,12 +665,13 @@ export function drawCameraCrew(
   ctx.fillStyle = '#888888';
   ctx.fillRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH);
 
-  // Lens — triangle at front
+  // Lens — flared outward like a camera lens
   ctx.fillStyle = '#555555';
   ctx.beginPath();
-  ctx.moveTo(bodyW / 2, -bodyH / 2 - 1);
-  ctx.lineTo(bodyW / 2 + 8, 0);
-  ctx.lineTo(bodyW / 2, bodyH / 2 + 1);
+  ctx.moveTo(bodyW / 2, -2);
+  ctx.lineTo(bodyW / 2 + 8, -bodyH / 2 - 1);
+  ctx.lineTo(bodyW / 2 + 8, bodyH / 2 + 1);
+  ctx.lineTo(bodyW / 2, 2);
   ctx.closePath();
   ctx.fill();
 
