@@ -29,6 +29,9 @@ function App() {
   const [careerCredibility, setCareerCredibility] = useState(10);
   const [jobsCompleted, setJobsCompleted] = useState(0);
 
+  // Shop item lifetime usage counts (keyed by item id)
+  const [itemUses, setItemUses] = useState<Record<string, number>>({});
+
   // After the shop, should we advance to the next level or retry?
   const [afterShop, setAfterShop] = useState<'next' | 'retry'>('next');
 
@@ -83,6 +86,7 @@ function App() {
     if (item.cost <= 0) return;
     setCareerEarnings((prev) => Math.max(0, prev - item.cost));
     setCareerHealth((prev) => Math.max(0, Math.min(200, prev + item.healthBonus)));
+    setItemUses((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
   }, []);
 
   const handleShopDone = useCallback(() => {
@@ -104,6 +108,7 @@ function App() {
     setCareerEarnings(0);
     setCareerCredibility(10);
     setJobsCompleted(0);
+    setItemUses({});
     setLandingResult(null);
     setHudData(null);
     setScreen('briefing');
@@ -155,6 +160,7 @@ function App() {
           careerHealth={careerHealth}
           careerEarnings={careerEarnings}
           careerCredibility={careerCredibility}
+          itemUses={itemUses}
           onPurchase={handleShopPurchase}
           onSkip={handleShopDone}
         />

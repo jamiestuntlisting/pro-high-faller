@@ -120,7 +120,9 @@ export class GameLoop {
             angleDeviation: Math.abs(0 - this.state.level.idealAngle),
             grade: 'F' as const,
             injuryPoints: Math.min(80, Math.round(h * 1.5)),
-            injuryDescription: "Panicked and fell straight off the edge. No airbag.",
+            injuryDescription: this.state.level.targetType === 'water'
+              ? "Panicked and fell straight off the edge. Missed the water."
+              : "Panicked and fell straight off the edge. No airbag.",
             pay: 0,
             credibilityPoints: -8,
             horizontalAccuracy: 0,
@@ -234,7 +236,11 @@ export class GameLoop {
       } else if (hitCrew) {
         crewCallout = 'IDIOT HIT THE PANAVISION!';
       } else if (horizontalAccuracy <= 0) {
-        crewCallout = 'HE MISSED THE AIRBAG!';
+        crewCallout = level.targetType === 'water'
+          ? 'HE MISSED THE WATER!'
+          : level.targetType === 'boxes'
+            ? 'HE MISSED THE BOXES!'
+            : 'HE MISSED THE AIRBAG!';
       } else {
         const { angleDeviation } = this.state.landing!;
 
@@ -248,7 +254,11 @@ export class GameLoop {
         } else if (horizontalAccuracy >= 0.1) {
           posLine = 'OFF CENTER!';
         } else {
-          posLine = 'BARELY ON THE AIRBAG!';
+          posLine = level.targetType === 'water'
+            ? 'BARELY IN THE WATER!'
+            : level.targetType === 'boxes'
+              ? 'BARELY ON THE BOXES!'
+              : 'BARELY ON THE AIRBAG!';
         }
 
         let angleLine: string;

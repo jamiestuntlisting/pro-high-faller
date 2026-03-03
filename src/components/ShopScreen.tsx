@@ -8,14 +8,15 @@ export interface ShopItem {
   healthMin?: number;   // For random-range items (like Stem Cell)
   healthMax?: number;
   description: string;
+  maxUses?: number;     // Lifetime uses per career (undefined = unlimited)
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'ice',       name: 'ICE PACK',         cost: 50,   healthBonus: 10, description: 'Bag of ice. Old school.' },
-  { id: 'ibuprofen', name: 'IBUPROFEN',        cost: 100,  healthBonus: 20, description: 'Take two and call me in the morning.' },
-  { id: 'cortisone', name: 'CORTISONE SHOT',   cost: 300,  healthBonus: 40, description: "The doc says it's fine. Probably." },
-  { id: 'chiro',     name: 'CHIROPRACTOR',     cost: 500,  healthBonus: 30, description: 'That crack was satisfying.' },
-  { id: 'pt',        name: 'PHYSICAL THERAPY',  cost: 800,  healthBonus: 60, description: 'Doing it the right way.' },
+  { id: 'ice',       name: 'ICE PACK',         cost: 50,   healthBonus: 10, maxUses: 10, description: 'Bag of ice. Old school.' },
+  { id: 'ibuprofen', name: 'IBUPROFEN',        cost: 100,  healthBonus: 20, maxUses: 8,  description: 'Take two and call me in the morning.' },
+  { id: 'cortisone', name: 'CORTISONE SHOT',   cost: 300,  healthBonus: 40, maxUses: 5,  description: "The doc says it's fine. Probably." },
+  { id: 'chiro',     name: 'CHIROPRACTOR',     cost: 500,  healthBonus: 30, maxUses: 4,  description: 'That crack was satisfying.' },
+  { id: 'pt',        name: 'PHYSICAL THERAPY',  cost: 800,  healthBonus: 60, maxUses: 3,  description: 'Doing it the right way.' },
   { id: 'stemcell',  name: 'STEM CELL TREATMENT', cost: 3000, healthBonus: 0, healthMin: -10, healthMax: 120, description: 'Cutting edge. Results may vary... wildly.' },
 ];
 
@@ -23,11 +24,12 @@ interface Props {
   careerHealth: number;
   careerEarnings: number;
   careerCredibility: number;
+  itemUses: Record<string, number>;
   onPurchase: (item: ShopItem) => void;
   onSkip: () => void;
 }
 
-export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, onPurchase, onSkip }: Props) {
+export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, itemUses, onPurchase, onSkip }: Props) {
   // Require SPACE to be released before accepting it — prevents the keypress
   // that opened the shop (from the result screen) from immediately skipping it.
   const [spaceReleased, setSpaceReleased] = useState(false);
@@ -112,8 +114,11 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, on
             const canAfford = careerEarnings >= item.cost;
             const healthFull = careerHealth >= 200;
             const isRandom = item.healthMin !== undefined && item.healthMax !== undefined;
+            const used = itemUses[item.id] || 0;
+            const usedUp = item.maxUses !== undefined && used >= item.maxUses;
             // Random items can always be used (might lose HP), fixed items disabled when full
-            const disabled = !canAfford || (!isRandom && healthFull);
+            const disabled = !canAfford || usedUp || (!isRandom && healthFull);
+            const remaining = item.maxUses !== undefined ? item.maxUses - used : undefined;
             return (
               <div key={item.id} style={{ ...styles.itemRow, opacity: disabled ? 0.4 : 1 }}>
                 <div style={styles.itemTop}>
@@ -129,6 +134,16 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, on
                       <span style={{ color: '#44aa44' }}>+{item.healthBonus}HP</span>
                     )}
                   </div>
+                </div>
+                {/* Remaining uses indicator */}
+                <div style={styles.usesLabel}>
+                  {remaining !== undefined ? (
+                    <span style={{ color: usedUp ? '#aa4444' : remaining <= 2 ? '#aaaa44' : '#666' }}>
+                      {usedUp ? 'USED UP' : `${remaining} left`}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#666' }}>∞</span>
+                  )}
                 </div>
                 <button
                   style={{
@@ -269,6 +284,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
     fontSize: '8px',
     whiteSpace: 'nowrap',
+  },
+  usesLabel: {
+    position: 'absolute',
+    bottom: '6px',
+    right: '8px',
+    fontSize: '7px',
+    fontStyle: 'italic',
   },
   buyBtn: {
     position: 'absolute',

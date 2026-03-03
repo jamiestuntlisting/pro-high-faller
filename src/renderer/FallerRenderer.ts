@@ -5,6 +5,8 @@ import { RENDER } from '../constants';
 //  COSTUME SYSTEM — per-level outfits
 // ========================================================
 
+type HatStyle = 'cowboy' | 'beanie' | 'hardhat' | 'bowler' | 'police' | 'wig';
+
 interface Costume {
   shirt: string;
   shirtAccent: string;
@@ -12,29 +14,47 @@ interface Costume {
   pants: string;
   boots: string;
   cape?: string;       // cape color (undefined = no cape)
-  hat?: { color: string; style: 'cowboy' | 'beanie' | 'hardhat' };
+  hat?: { color: string; style: HatStyle };
+  skirt?: string;      // if present, draws a dress/skirt instead of pants
+  mustache?: boolean;  // Chaplin-style mustache
 }
 
 const COSTUMES: Costume[] = [
   // 1: Red plaid flannel + jeans (classic stuntman)
   { shirt: '#aa3333', shirtAccent: '#661a1a', sleeve: '#aa3333', pants: '#335588', boots: '#664422' },
-  // 2: Black tee + cargo pants
-  { shirt: '#333333', shirtAccent: '#222222', sleeve: '#333333', pants: '#445533', boots: '#333322' },
-  // 3: Hawaiian shirt + khakis + cowboy hat
-  { shirt: '#cc6622', shirtAccent: '#886611', sleeve: '#cc6622', pants: '#aa9966', boots: '#664422', hat: { color: '#8B7355', style: 'cowboy' } },
-  // 4: Superhero suit + red cape
+  // 2: Denim jacket + jeans (stunt double)
+  { shirt: '#4477aa', shirtAccent: '#335588', sleeve: '#4477aa', pants: '#335588', boots: '#8B6914' },
+  // 3: Police uniform + police cap
+  { shirt: '#1a3366', shirtAccent: '#0d1a33', sleeve: '#1a3366', pants: '#1a2244', boots: '#111111', hat: { color: '#1a2244', style: 'police' } },
+  // 4: Bruce Lee — yellow jumpsuit (Game of Death)
+  { shirt: '#FFD700', shirtAccent: '#222222', sleeve: '#FFD700', pants: '#FFD700', boots: '#222222' },
+  // 5: Red tracksuit (Dar Robinson style)
+  { shirt: '#cc2222', shirtAccent: '#ffffff', sleeve: '#cc2222', pants: '#cc2222', boots: '#ffffff' },
+  // 6: Full cowboy — leather vest + jeans + boots + hat
+  { shirt: '#8B6914', shirtAccent: '#6B4F10', sleeve: '#aa8833', pants: '#335588', boots: '#5C3317', hat: { color: '#6B4226', style: 'cowboy' } },
+  // 7: Charlie Chaplin — black suit + bowler hat + mustache
+  { shirt: '#1a1a1a', shirtAccent: '#333333', sleeve: '#1a1a1a', pants: '#1a1a1a', boots: '#1a1a1a', hat: { color: '#1a1a1a', style: 'bowler' }, mustache: true },
+  // 8: White disco suit (Saturday Night Fever)
+  { shirt: '#eeeeee', shirtAccent: '#cccccc', sleeve: '#eeeeee', pants: '#eeeeee', boots: '#222222' },
+  // 9: Woman in a dress — wig flies off on jump!
+  { shirt: '#cc3366', shirtAccent: '#992244', sleeve: '#cc3366', pants: '#cc3366', boots: '#aa2244', skirt: '#cc3366', hat: { color: '#FFD700', style: 'wig' } },
+  // 10: Superhero suit + red cape
   { shirt: '#2244aa', shirtAccent: '#112255', sleeve: '#2244aa', pants: '#2244aa', boots: '#aa2222', cape: '#cc2222' },
-  // 5: Green jacket + dark pants + beanie
+  // 11: Hawaiian shirt + khakis + cowboy hat
+  { shirt: '#cc6622', shirtAccent: '#886611', sleeve: '#cc6622', pants: '#aa9966', boots: '#664422', hat: { color: '#8B7355', style: 'cowboy' } },
+  // 12: Green jacket + dark pants + beanie
   { shirt: '#336633', shirtAccent: '#224422', sleeve: '#336633', pants: '#333333', boots: '#444444', hat: { color: '#224422', style: 'beanie' } },
-  // 6: Orange jumpsuit
+  // 13: Black tee + cargo pants
+  { shirt: '#333333', shirtAccent: '#222222', sleeve: '#333333', pants: '#445533', boots: '#333322' },
+  // 14: Orange jumpsuit
   { shirt: '#cc6600', shirtAccent: '#993300', sleeve: '#cc6600', pants: '#cc6600', boots: '#222222' },
-  // 7: Leather jacket + cowboy hat
+  // 15: Leather jacket + cowboy hat
   { shirt: '#552222', shirtAccent: '#331111', sleeve: '#552222', pants: '#222222', boots: '#222222', hat: { color: '#3a2a1a', style: 'cowboy' } },
-  // 8: Hi-vis vest + hardhat
+  // 16: Hi-vis vest + hardhat
   { shirt: '#ccaa22', shirtAccent: '#998811', sleeve: '#ccaa22', pants: '#335588', boots: '#664422', hat: { color: '#cccc22', style: 'hardhat' } },
-  // 9: Black suit (spy)
+  // 17: Black suit (spy)
   { shirt: '#1a1a1a', shirtAccent: '#111111', sleeve: '#1a1a1a', pants: '#1a1a1a', boots: '#111111' },
-  // 10: Purple + gold cape (fantasy)
+  // 18: Purple + gold cape (fantasy)
   { shirt: '#663399', shirtAccent: '#442266', sleeve: '#663399', pants: '#442266', boots: '#333333', cape: '#9933cc' },
 ];
 
@@ -78,7 +98,7 @@ export function draw(
 
   if (phase === 'LANDED') {
     // No rotation for landed — draw in a natural ground-relative pose
-    drawLanded(ctx, costume, targetType);
+    drawLanded(ctx, costume, targetType, angle);
   } else {
     const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
 
@@ -163,6 +183,12 @@ function drawUpright(
   ctx.arc(1.5, headCY - 0.5, 1, 0, Math.PI * 2);
   ctx.fill();
 
+  // Mustache (Chaplin)
+  if (costume.mustache) {
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(-1.5, headCY + 1, 3, 1);
+  }
+
   // === TORSO (shirt) ===
   ctx.strokeStyle = costume.shirt;
   ctx.lineWidth = 3;
@@ -198,35 +224,65 @@ function drawUpright(
     ctx.lineTo(7 - armSwing * 2, shoulderY - 5 - armSwing * 4);
     ctx.stroke();
 
-    // Legs (pants color)
-    const kneeY = hipY + (footY - hipY) * 0.5;
-    const lKneeX = -2 + legSwing * 3;
-    const lFootX = -4 + legSwing * 4;
-    const lFootY = footY - Math.abs(legSwing) * 2;
-    const rKneeX = 2 - legSwing * 3;
-    const rFootX = 4 - legSwing * 4;
-    const rFootY = footY - Math.abs(legSwing) * 2;
+    if (costume.skirt) {
+      // Skirt billowing in the fall
+      const skirtWave = Math.sin(fallTime * 4) * 2;
+      ctx.fillStyle = costume.skirt;
+      ctx.beginPath();
+      ctx.moveTo(-2, hipY);
+      ctx.lineTo(-9 + skirtWave, footY - 4);
+      ctx.lineTo(9 - skirtWave, footY - 4);
+      ctx.lineTo(2, hipY);
+      ctx.closePath();
+      ctx.fill();
+      // Legs below skirt (skin tone)
+      ctx.strokeStyle = '#ddbbaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-3, footY - 4);
+      ctx.lineTo(-4 + legSwing * 2, footY);
+      ctx.moveTo(3, footY - 4);
+      ctx.lineTo(4 - legSwing * 2, footY);
+      ctx.stroke();
+      // Shoes
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(-6 + legSwing * 2, footY);
+      ctx.lineTo(-2 + legSwing * 2, footY);
+      ctx.moveTo(2 - legSwing * 2, footY);
+      ctx.lineTo(6 - legSwing * 2, footY);
+      ctx.stroke();
+    } else {
+      // Legs (pants color)
+      const kneeY = hipY + (footY - hipY) * 0.5;
+      const lKneeX = -2 + legSwing * 3;
+      const lFootX = -4 + legSwing * 4;
+      const lFootY = footY - Math.abs(legSwing) * 2;
+      const rKneeX = 2 - legSwing * 3;
+      const rFootX = 4 - legSwing * 4;
+      const rFootY = footY - Math.abs(legSwing) * 2;
 
-    ctx.strokeStyle = costume.pants;
-    ctx.beginPath();
-    ctx.moveTo(0, hipY);
-    ctx.lineTo(lKneeX, kneeY);
-    ctx.lineTo(lFootX, lFootY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, hipY);
-    ctx.lineTo(rKneeX, kneeY);
-    ctx.lineTo(rFootX, rFootY);
-    ctx.stroke();
+      ctx.strokeStyle = costume.pants;
+      ctx.beginPath();
+      ctx.moveTo(0, hipY);
+      ctx.lineTo(lKneeX, kneeY);
+      ctx.lineTo(lFootX, lFootY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, hipY);
+      ctx.lineTo(rKneeX, kneeY);
+      ctx.lineTo(rFootX, rFootY);
+      ctx.stroke();
 
-    // Boots
-    ctx.strokeStyle = costume.boots;
-    ctx.beginPath();
-    ctx.moveTo(lFootX - 2, lFootY);
-    ctx.lineTo(lFootX + 2, lFootY);
-    ctx.moveTo(rFootX - 2, rFootY);
-    ctx.lineTo(rFootX + 2, rFootY);
-    ctx.stroke();
+      // Boots
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(lFootX - 2, lFootY);
+      ctx.lineTo(lFootX + 2, lFootY);
+      ctx.moveTo(rFootX - 2, rFootY);
+      ctx.lineTo(rFootX + 2, rFootY);
+      ctx.stroke();
+    }
   } else if (phase === 'JUMPING') {
     // Arms spread
     ctx.strokeStyle = costume.sleeve;
@@ -236,22 +292,51 @@ function drawUpright(
     ctx.lineTo(7, shoulderY - 2);
     ctx.stroke();
 
-    // Legs
-    ctx.strokeStyle = costume.pants;
-    ctx.beginPath();
-    ctx.moveTo(-5, footY);
-    ctx.lineTo(0, hipY);
-    ctx.lineTo(5, footY);
-    ctx.stroke();
+    if (costume.skirt) {
+      // Skirt flares out during jump
+      ctx.fillStyle = costume.skirt;
+      ctx.beginPath();
+      ctx.moveTo(-2, hipY);
+      ctx.lineTo(-8, footY - 3);
+      ctx.lineTo(8, footY - 3);
+      ctx.lineTo(2, hipY);
+      ctx.closePath();
+      ctx.fill();
+      // Legs below (skin)
+      ctx.strokeStyle = '#ddbbaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-4, footY - 3);
+      ctx.lineTo(-5, footY);
+      ctx.moveTo(4, footY - 3);
+      ctx.lineTo(5, footY);
+      ctx.stroke();
+      // Shoes
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(-7, footY);
+      ctx.lineTo(-3, footY);
+      ctx.moveTo(3, footY);
+      ctx.lineTo(7, footY);
+      ctx.stroke();
+    } else {
+      // Legs
+      ctx.strokeStyle = costume.pants;
+      ctx.beginPath();
+      ctx.moveTo(-5, footY);
+      ctx.lineTo(0, hipY);
+      ctx.lineTo(5, footY);
+      ctx.stroke();
 
-    // Boots
-    ctx.strokeStyle = costume.boots;
-    ctx.beginPath();
-    ctx.moveTo(-7, footY);
-    ctx.lineTo(-3, footY);
-    ctx.moveTo(3, footY);
-    ctx.lineTo(7, footY);
-    ctx.stroke();
+      // Boots
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(-7, footY);
+      ctx.lineTo(-3, footY);
+      ctx.moveTo(3, footY);
+      ctx.lineTo(7, footY);
+      ctx.stroke();
+    }
   } else {
     // Standing / leaning — arms down
     ctx.strokeStyle = costume.sleeve;
@@ -261,22 +346,51 @@ function drawUpright(
     ctx.lineTo(6, hipY - 2);
     ctx.stroke();
 
-    // Legs
-    ctx.strokeStyle = costume.pants;
-    ctx.beginPath();
-    ctx.moveTo(-5, footY);
-    ctx.lineTo(0, hipY);
-    ctx.lineTo(5, footY);
-    ctx.stroke();
+    if (costume.skirt) {
+      // Dress/skirt — triangle from hips
+      ctx.fillStyle = costume.skirt;
+      ctx.beginPath();
+      ctx.moveTo(-2, hipY);
+      ctx.lineTo(-7, footY - 3);
+      ctx.lineTo(7, footY - 3);
+      ctx.lineTo(2, hipY);
+      ctx.closePath();
+      ctx.fill();
+      // Legs below skirt (skin)
+      ctx.strokeStyle = '#ddbbaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-3, footY - 3);
+      ctx.lineTo(-4, footY);
+      ctx.moveTo(3, footY - 3);
+      ctx.lineTo(4, footY);
+      ctx.stroke();
+      // Shoes
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(-6, footY);
+      ctx.lineTo(-2, footY);
+      ctx.moveTo(2, footY);
+      ctx.lineTo(6, footY);
+      ctx.stroke();
+    } else {
+      // Legs
+      ctx.strokeStyle = costume.pants;
+      ctx.beginPath();
+      ctx.moveTo(-5, footY);
+      ctx.lineTo(0, hipY);
+      ctx.lineTo(5, footY);
+      ctx.stroke();
 
-    // Boots
-    ctx.strokeStyle = costume.boots;
-    ctx.beginPath();
-    ctx.moveTo(-7, footY);
-    ctx.lineTo(-3, footY);
-    ctx.moveTo(3, footY);
-    ctx.lineTo(7, footY);
-    ctx.stroke();
+      // Boots
+      ctx.strokeStyle = costume.boots;
+      ctx.beginPath();
+      ctx.moveTo(-7, footY);
+      ctx.lineTo(-3, footY);
+      ctx.moveTo(3, footY);
+      ctx.lineTo(7, footY);
+      ctx.stroke();
+    }
   }
 }
 
@@ -335,7 +449,7 @@ function drawHat(
   ctx: CanvasRenderingContext2D,
   headCY: number,
   headR: number,
-  hat: { color: string; style: 'cowboy' | 'beanie' | 'hardhat' },
+  hat: { color: string; style: HatStyle },
   phase: FallerPhase,
   timeSinceJump: number,
 ): void {
@@ -365,7 +479,7 @@ function drawHat(
   ctx.restore();
 }
 
-function drawHatShape(ctx: CanvasRenderingContext2D, style: 'cowboy' | 'beanie' | 'hardhat'): void {
+function drawHatShape(ctx: CanvasRenderingContext2D, style: HatStyle): void {
   if (style === 'cowboy') {
     ctx.fillRect(-5, 0, 10, 1.5);
     ctx.fillRect(-2.5, -3.5, 5, 3.5);
@@ -379,6 +493,28 @@ function drawHatShape(ctx: CanvasRenderingContext2D, style: 'cowboy' | 'beanie' 
     ctx.beginPath();
     ctx.arc(0, 0, 4, Math.PI, 0);
     ctx.fill();
+  } else if (style === 'bowler') {
+    // Round dome + small curled brim
+    ctx.fillRect(-4, 0, 8, 1.5);
+    ctx.beginPath();
+    ctx.arc(0, -1, 3, Math.PI, 0);
+    ctx.fill();
+  } else if (style === 'police') {
+    // Flat-topped police cap with badge
+    ctx.fillRect(-4, 0, 8, 1);       // brim
+    ctx.fillRect(-3, -3, 6, 3);      // flat crown
+    // Gold badge
+    const prevFill = ctx.fillStyle;
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(-1, -2.5, 2, 1.5);
+    ctx.fillStyle = prevFill;
+  } else if (style === 'wig') {
+    // Big fluffy wig — hair poof on top + sides
+    ctx.beginPath();
+    ctx.arc(0, -1, 4.5, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-4.5, -1, 2, 4);
+    ctx.fillRect(2.5, -1, 2, 4);
   }
 }
 
@@ -434,10 +570,20 @@ function drawLanded(
   ctx: CanvasRenderingContext2D,
   costume: Costume,
   targetType: TargetType,
+  angle: number,
 ): void {
   // Origin is at the landing point (ground surface level)
   // y < 0 is above surface, y > 0 is below
   const headR = 2.5;
+
+  // Flip the landed pose if the performer's head was on the right side at impact.
+  // The default pose draws head to the left, matching angles ~180-360 (head-left).
+  // For angles ~0-180 (head-right), mirror horizontally so there's no visual jump.
+  const normAngle = ((angle % 360) + 360) % 360;
+  const flip = normAngle > 0 && normAngle < 180;
+  if (flip) {
+    ctx.scale(-1, 1);
+  }
 
   if (targetType === 'airbag') {
     // Lying on back, sunk into airbag — relaxed pose
@@ -479,14 +625,35 @@ function drawLanded(
     ctx.lineTo(5, -5);
     ctx.stroke();
 
-    // Legs (pants) — slightly apart
-    ctx.strokeStyle = costume.pants;
-    ctx.beginPath();
-    ctx.moveTo(3, -1);
-    ctx.lineTo(8, 1);
-    ctx.moveTo(3, -1);
-    ctx.lineTo(9, -2);
-    ctx.stroke();
+    if (costume.skirt) {
+      // Skirt fanned out on airbag
+      ctx.fillStyle = costume.skirt;
+      ctx.beginPath();
+      ctx.moveTo(3, -3);
+      ctx.lineTo(9, -4);
+      ctx.lineTo(10, 2);
+      ctx.lineTo(3, 1);
+      ctx.closePath();
+      ctx.fill();
+      // Legs (skin) below skirt
+      ctx.strokeStyle = '#ddbbaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(8, 0);
+      ctx.lineTo(10, 1);
+      ctx.moveTo(9, -2);
+      ctx.lineTo(11, -2);
+      ctx.stroke();
+    } else {
+      // Legs (pants) — slightly apart
+      ctx.strokeStyle = costume.pants;
+      ctx.beginPath();
+      ctx.moveTo(3, -1);
+      ctx.lineTo(8, 1);
+      ctx.moveTo(3, -1);
+      ctx.lineTo(9, -2);
+      ctx.stroke();
+    }
 
     // Boots
     ctx.strokeStyle = costume.boots;
@@ -566,14 +733,35 @@ function drawLanded(
     ctx.lineTo(5, -4);
     ctx.stroke();
 
-    // Legs (pants) — splayed out
-    ctx.strokeStyle = costume.pants;
-    ctx.beginPath();
-    ctx.moveTo(1, -3);
-    ctx.lineTo(-4, 0);
-    ctx.moveTo(1, -3);
-    ctx.lineTo(5, 0);
-    ctx.stroke();
+    if (costume.skirt) {
+      // Skirt bunched up around sitting position
+      ctx.fillStyle = costume.skirt;
+      ctx.beginPath();
+      ctx.moveTo(-1, -3);
+      ctx.lineTo(-6, -1);
+      ctx.lineTo(7, -1);
+      ctx.lineTo(3, -3);
+      ctx.closePath();
+      ctx.fill();
+      // Legs (skin) below skirt
+      ctx.strokeStyle = '#ddbbaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-3, -1);
+      ctx.lineTo(-4, 0);
+      ctx.moveTo(4, -1);
+      ctx.lineTo(5, 0);
+      ctx.stroke();
+    } else {
+      // Legs (pants) — splayed out
+      ctx.strokeStyle = costume.pants;
+      ctx.beginPath();
+      ctx.moveTo(1, -3);
+      ctx.lineTo(-4, 0);
+      ctx.moveTo(1, -3);
+      ctx.lineTo(5, 0);
+      ctx.stroke();
+    }
 
     // Boots
     ctx.strokeStyle = costume.boots;

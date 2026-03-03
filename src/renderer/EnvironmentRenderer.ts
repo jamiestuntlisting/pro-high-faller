@@ -335,23 +335,26 @@ function drawLandingZone(
       }
     }
 
-    // Water splash animation on landing
-    if (landedInfo && landedInfo.time < 1.5) {
+    // Water splash animation — only if performer actually hit the water
+    const hitWater = landedInfo && landedInfo.x >= left && landedInfo.x <= right;
+    if (hitWater && landedInfo.time < 1.5) {
       const t = landedInfo.time;
       const splashAlpha = Math.max(0, 1 - t / 1.5);
+      const waterSurface = groundY - matHeight; // top of water
+
       ctx.save();
       ctx.globalAlpha = splashAlpha;
 
-      // Splash droplets rising and falling
+      // Splash droplets rising and falling from water surface
       const dropCount = 8;
       for (let i = 0; i < dropCount; i++) {
         const seed = ((i * 17 + 7) % 13) / 13;
         const spreadX = (seed - 0.5) * 40;
         const launchV = 20 + seed * 30;
-        const dropY = groundY - launchV * t + 60 * t * t; // gravity pulls back
+        const dropY = waterSurface - launchV * t + 60 * t * t;
         const dropX = landedInfo.x + spreadX * t;
 
-        if (dropY < groundY) {
+        if (dropY < waterSurface) {
           ctx.fillStyle = '#88bbdd';
           ctx.beginPath();
           ctx.arc(dropX, dropY, 1.5 - t * 0.8, 0, Math.PI * 2);
@@ -364,12 +367,12 @@ function drawLandingZone(
       ctx.strokeStyle = '#88bbdd';
       ctx.lineWidth = 1.5 - t;
       ctx.beginPath();
-      ctx.ellipse(landedInfo.x, groundY - 2, ringRadius, 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(landedInfo.x, waterSurface, ringRadius, 3, 0, 0, Math.PI * 2);
       ctx.stroke();
       if (t < 0.8) {
         const ring2 = 2 + t * 15;
         ctx.beginPath();
-        ctx.ellipse(landedInfo.x, groundY - 2, ring2, 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(landedInfo.x, waterSurface, ring2, 2, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
 
