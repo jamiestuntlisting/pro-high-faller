@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getHighScores, saveHighScore, isHighScore, type HighScore } from '../utils/highScores';
+import { getHighScores, fetchHighScores, saveHighScore, isHighScore, type HighScore } from '../utils/highScores';
 
 interface Props {
   jobsCompleted: number;
@@ -14,6 +14,11 @@ export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibil
   const qualifies = isHighScore(careerCredibility);
   const [scores, setScores] = useState<HighScore[]>(getHighScores);
 
+  // Fetch shared scores from server
+  useEffect(() => {
+    fetchHighScores().then(setScores);
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space' && (saved || !qualifies)) {
@@ -25,12 +30,12 @@ export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibil
     return () => window.removeEventListener('keydown', handler);
   }, [onRestart, saved, qualifies]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (initials.length === 0) return;
     const name = initials.toUpperCase().padEnd(3, ' ').slice(0, 3);
-    saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, jobsCompleted });
+    const updated = await saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, jobsCompleted });
     setSaved(true);
-    setScores(getHighScores());
+    setScores(updated);
   };
 
   const handleTap = (e: React.MouseEvent) => {

@@ -80,13 +80,48 @@ export function draw(
     // No rotation for landed — draw in a natural ground-relative pose
     drawLanded(ctx, costume, targetType);
   } else {
-    ctx.rotate((angle * Math.PI) / 180);
     const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
+
+    // Draw body in rotated space
+    ctx.save();
+    ctx.rotate((angle * Math.PI) / 180);
 
     if (isTucked && phase === 'FALLING') {
       drawTucked(ctx, oy, headR, bodyH, costume);
     } else {
       drawUpright(ctx, oy, headR, bodyH, phase, fallTime, costume, jumpTimer);
+    }
+
+    // Hat on head (STANDING/LEANING) — stays in rotated space
+    if (costume.hat && phase !== 'JUMPING' && phase !== 'FALLING') {
+      const headCY = oy + headR;
+      drawHat(ctx, headCY, headR, costume.hat, phase, jumpTimer + fallTime);
+    }
+    ctx.restore(); // undo rotation, back to translated-only space
+
+    // Hat flying off (JUMPING/FALLING) — drawn in world space so it doesn't orbit
+    if (costume.hat && (phase === 'JUMPING' || phase === 'FALLING')) {
+      const timeSinceJump = jumpTimer + fallTime;
+      if (timeSinceJump <= 2.0) {
+        // Calculate head-top position in world space (rotated from body-local)
+        const headTopLocal = oy - 2; // top of head in body-local Y
+        const rad = (angle * Math.PI) / 180;
+        const headWorldX = -Math.sin(rad) * headTopLocal;
+        const headWorldY = Math.cos(rad) * headTopLocal;
+
+        // Drift away in world space (to the right and upward)
+        const drift = timeSinceJump;
+        const driftX = drift * 10;
+        const driftY = -drift * 18;
+        const spin = drift * 3;
+
+        ctx.save();
+        ctx.fillStyle = costume.hat.color;
+        ctx.translate(headWorldX + driftX, headWorldY + driftY);
+        ctx.rotate(spin);
+        drawHatShape(ctx, costume.hat.style);
+        ctx.restore();
+      }
     }
   }
 
@@ -128,11 +163,6 @@ function drawUpright(
   ctx.beginPath();
   ctx.arc(1.5, headCY - 0.5, 1, 0, Math.PI * 2);
   ctx.fill();
-
-  // === HAT ===
-  if (costume.hat) {
-    drawHat(ctx, headCY, headR, costume.hat, phase, jumpTimer + fallTime);
-  }
 
   // === TORSO (shirt) ===
   ctx.strokeStyle = costume.shirt;
@@ -267,20 +297,20 @@ function drawCape(
   ctx.lineWidth = 2.5;
 
   if (phase === 'FALLING' || phase === 'JUMPING') {
-    // Cape billows upward (trails behind the fall direction)
+    // Cape trails behind the performer (negative X = back toward the building)
     const wave1 = Math.sin(fallTime * 4) * 3;
     const wave2 = Math.sin(fallTime * 6 + 1) * 2;
     const capeLen = 18;
 
     ctx.beginPath();
     ctx.moveTo(-1, shoulderY);
-    ctx.quadraticCurveTo(-3 + wave1, shoulderY - capeLen * 0.5, -4 + wave2, shoulderY - capeLen);
+    ctx.quadraticCurveTo(-capeLen * 0.5, shoulderY - 3 + wave1, -capeLen, shoulderY - 4 + wave2);
     ctx.stroke();
 
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(1, shoulderY);
-    ctx.quadraticCurveTo(-1 + wave1 * 0.6, shoulderY - capeLen * 0.4, -2 + wave2 * 0.7, shoulderY - capeLen + 3);
+    ctx.quadraticCurveTo(-capeLen * 0.4, shoulderY - 1 + wave1 * 0.6, -capeLen + 3, shoulderY - 2 + wave2 * 0.7);
     ctx.stroke();
   } else {
     // Standing/leaning: cape hangs down behind
@@ -386,13 +416,13 @@ function drawTucked(
   ctx.arc(cx + 3, cy + 3, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Cape trails behind when tucked
+  // Cape trails behind when tucked (negative X = back toward building)
   if (costume.cape) {
     ctx.strokeStyle = costume.cape;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 5);
-    ctx.lineTo(cx - 3, cy - 14);
+    ctx.moveTo(cx - 5, cy);
+    ctx.lineTo(cx - 16, cy + 2);
     ctx.stroke();
   }
 }

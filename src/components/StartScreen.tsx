@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { LevelConfig } from '../types';
-import { getHighScores, type HighScore } from '../utils/highScores';
+import { getHighScores, fetchHighScores, type HighScore } from '../utils/highScores';
 import { HighScoreTable } from './RetirementScreen';
 
 interface Props {
@@ -20,7 +20,12 @@ export function StartScreen({
   jobsCompleted,
   onStart,
 }: Props) {
-  const [scores] = useState<HighScore[]>(getHighScores);
+  const [scores, setScores] = useState<HighScore[]>(getHighScores);
+
+  // Fetch shared scores from server
+  useEffect(() => {
+    fetchHighScores().then(setScores);
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
