@@ -6,7 +6,7 @@ export interface HighScore {
   name: string;       // 3-letter initials
   reputation: number; // Peak career reputation
   earnings: number;   // Career total earnings
-  jobsCompleted: number;
+  highestLevel: number;
   date: string;       // ISO date string
 }
 

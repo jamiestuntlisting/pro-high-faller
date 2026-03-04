@@ -8,7 +8,7 @@ interface Props {
   careerHealth: number;
   careerEarnings: number;
   careerCredibility: number;
-  jobsCompleted: number;
+  highestLevel: number;
   onStart: () => void;
 }
 
@@ -17,7 +17,7 @@ export function StartScreen({
   careerHealth,
   careerEarnings,
   careerCredibility,
-  jobsCompleted,
+  highestLevel,
   onStart,
 }: Props) {
   const [scores, setScores] = useState<HighScore[]>(getHighScores);
@@ -90,9 +90,9 @@ export function StartScreen({
       </div>
 
       {/* Career stats */}
-      {jobsCompleted > 0 && (
+      {highestLevel > 1 && (
         <div style={styles.career}>
-          <span>Jobs: {jobsCompleted}</span>
+          <span>Level: {highestLevel}</span>
           <span>Earnings: ${careerEarnings.toLocaleString()}</span>
           <span>Cred: {careerCredibility}</span>
           <span>Health: {careerHealth}/200</span>

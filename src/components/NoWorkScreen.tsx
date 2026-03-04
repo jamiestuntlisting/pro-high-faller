@@ -3,13 +3,13 @@ import { getHighScores, fetchHighScores, saveHighScore, isHighScore, type HighSc
 import { HighScoreTable } from './RetirementScreen';
 
 interface Props {
-  jobsCompleted: number;
+  highestLevel: number;
   careerEarnings: number;
   careerCredibility: number;
   onRestart: () => void;
 }
 
-export function NoWorkScreen({ jobsCompleted, careerEarnings, careerCredibility, onRestart }: Props) {
+export function NoWorkScreen({ highestLevel, careerEarnings, careerCredibility, onRestart }: Props) {
   const [initials, setInitials] = useState('');
   const [saved, setSaved] = useState(false);
   const qualifies = isHighScore(careerCredibility);
@@ -34,7 +34,7 @@ export function NoWorkScreen({ jobsCompleted, careerEarnings, careerCredibility,
   const handleSave = async () => {
     if (initials.length === 0) return;
     const name = initials.toUpperCase().padEnd(3, ' ').slice(0, 3);
-    const updated = await saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, jobsCompleted });
+    const updated = await saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, highestLevel });
     setSaved(true);
     setScores(updated);
   };
@@ -58,8 +58,8 @@ export function NoWorkScreen({ jobsCompleted, careerEarnings, careerCredibility,
 
         <div style={styles.summary}>
           <div style={styles.row}>
-            <span style={styles.label}>Jobs Completed:</span>
-            <span style={styles.value}>{jobsCompleted}</span>
+            <span style={styles.label}>Highest Level:</span>
+            <span style={styles.value}>{highestLevel}</span>
           </div>
           <div style={styles.row}>
             <span style={styles.label}>Career Earnings:</span>

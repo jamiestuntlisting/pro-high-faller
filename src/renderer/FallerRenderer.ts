@@ -90,6 +90,7 @@ export function draw(
   jumpTimer = 0,
   targetType: TargetType = 'airbag',
   landedTime = 0,
+  backFall = false,
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -112,6 +113,10 @@ export function draw(
 
     // Draw body in rotated space
     ctx.save();
+    // Back fall: mirror sprite when standing/leaning so performer faces backwards
+    if (backFall && (phase === 'STANDING' || phase === 'LEANING')) {
+      ctx.scale(-1, 1);
+    }
     ctx.rotate((angle * Math.PI) / 180);
 
     if (isTucked && phase === 'FALLING') {

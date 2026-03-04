@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { getHighScores, fetchHighScores, saveHighScore, isHighScore, type HighScore } from '../utils/highScores';
 
 interface Props {
-  jobsCompleted: number;
+  highestLevel: number;
   careerEarnings: number;
   careerCredibility: number;
   onRestart: () => void;
 }
 
-export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibility, onRestart }: Props) {
+export function RetirementScreen({ highestLevel, careerEarnings, careerCredibility, onRestart }: Props) {
   const [initials, setInitials] = useState('');
   const [saved, setSaved] = useState(false);
   const qualifies = isHighScore(careerCredibility);
@@ -33,7 +33,7 @@ export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibil
   const handleSave = async () => {
     if (initials.length === 0) return;
     const name = initials.toUpperCase().padEnd(3, ' ').slice(0, 3);
-    const updated = await saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, jobsCompleted });
+    const updated = await saveHighScore({ name, reputation: careerCredibility, earnings: careerEarnings, highestLevel });
     setSaved(true);
     setScores(updated);
   };
@@ -56,8 +56,8 @@ export function RetirementScreen({ jobsCompleted, careerEarnings, careerCredibil
 
         <div style={styles.summary}>
           <div style={styles.row}>
-            <span style={styles.label}>Jobs Completed:</span>
-            <span style={styles.value}>{jobsCompleted}</span>
+            <span style={styles.label}>Highest Level:</span>
+            <span style={styles.value}>{highestLevel}</span>
           </div>
           <div style={styles.row}>
             <span style={styles.label}>Career Earnings:</span>
@@ -111,7 +111,7 @@ function HighScoreTable({ scores, highlightRep }: { scores: HighScore[]; highlig
         <span style={{ width: '40px' }}>NAME</span>
         <span style={{ flex: 1, textAlign: 'right' }}>REP</span>
         <span style={{ width: '50px', textAlign: 'right' }}>EARNINGS</span>
-        <span style={{ width: '34px', textAlign: 'right' }}>JOBS</span>
+        <span style={{ width: '34px', textAlign: 'right' }}>LVL</span>
       </div>
       {scores.map((s, i) => (
         <div
@@ -125,7 +125,7 @@ function HighScoreTable({ scores, highlightRep }: { scores: HighScore[]; highlig
           <span style={{ width: '40px' }}>{s.name}</span>
           <span style={{ flex: 1, textAlign: 'right' }}>{s.reputation}</span>
           <span style={{ width: '50px', textAlign: 'right' }}>${s.earnings.toLocaleString()}</span>
-          <span style={{ width: '34px', textAlign: 'right' }}>{s.jobsCompleted}</span>
+          <span style={{ width: '34px', textAlign: 'right' }}>L{s.highestLevel}</span>
         </div>
       ))}
     </div>

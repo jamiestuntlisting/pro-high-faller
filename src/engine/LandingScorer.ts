@@ -81,6 +81,7 @@ export function score(state: GameState): LandingResult {
     pay,
     credibilityPoints,
     horizontalAccuracy,
+    totalRotation: faller.totalRotation,
   };
 }
 

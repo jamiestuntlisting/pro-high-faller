@@ -58,10 +58,11 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
     fontFamily: mono,
     fontSize: '10px',
-    color: '#888888',
+    color: '#cccccc',
+    textShadow: '0 0 3px #000, 0 0 6px #000, 1px 1px 2px #000',
   },
   dim: {
-    color: '#555555',
+    color: '#888888',
   },
   topLeft: {
     position: 'absolute',

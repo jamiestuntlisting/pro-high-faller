@@ -79,6 +79,7 @@ export interface GameState {
   // Crew text rendered in world space above camera crew
   crewText: string | null;
   crewCallout: string | null;
+  backFall: boolean;         // 20% chance: performer faces backwards, falls face-up
   // Landing animation
   landedTime: number;       // Seconds since landing (for splash/settle animation)
   // Previous frame (for interpolation)
@@ -108,6 +109,7 @@ export interface LandingResult {
   pay: number;
   credibilityPoints: number;  // Earned/lost based on performance
   horizontalAccuracy: number;  // 0-1, how centered on landing zone
+  totalRotation: number;       // Total degrees rotated during fall
 }
 
 // === HUD ===

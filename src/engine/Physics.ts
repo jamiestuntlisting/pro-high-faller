@@ -102,6 +102,11 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
         } else {
           f.vx = jumpVXForLean(state.jumpLeanAngle);
         }
+        // Back fall: rotate 180° so performer starts face-up
+        if (state.backFall && !f.verticalJump) {
+          f.angle = normalizeAngle(f.angle + 180);
+          f.totalRotation += 180;
+        }
         lockWind(state);
       }
       break;

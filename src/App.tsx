@@ -73,7 +73,7 @@ function App() {
       setScreen('no_work');
       return;
     }
-    setCurrentLevel((prev) => prev + 1);
+    setCurrentLevel((prev) => prev === 40 ? 100 : prev + 1);
     setScreen('briefing');
   }, [careerHealth, careerCredibility, jobsCompleted]);
 
@@ -91,7 +91,7 @@ function App() {
 
   const handleShopDone = useCallback(() => {
     if (afterShop === 'next') {
-      setCurrentLevel((prev) => prev + 1);
+      setCurrentLevel((prev) => prev === 40 ? 100 : prev + 1);
     }
     setScreen('briefing');
   }, [afterShop]);
@@ -122,7 +122,7 @@ function App() {
           careerHealth={careerHealth}
           careerEarnings={careerEarnings}
           careerCredibility={careerCredibility}
-          jobsCompleted={jobsCompleted}
+          highestLevel={currentLevel}
           onStart={handleStart}
         />
       )}
@@ -168,7 +168,7 @@ function App() {
 
       {screen === 'retired' && (
         <RetirementScreen
-          jobsCompleted={jobsCompleted}
+          highestLevel={currentLevel}
           careerEarnings={careerEarnings}
           careerCredibility={careerCredibility}
           onRestart={handleRestart}
@@ -177,7 +177,7 @@ function App() {
 
       {screen === 'no_work' && (
         <NoWorkScreen
-          jobsCompleted={jobsCompleted}
+          highestLevel={currentLevel}
           careerEarnings={careerEarnings}
           careerCredibility={careerCredibility}
           onRestart={handleRestart}

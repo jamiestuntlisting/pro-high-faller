@@ -77,7 +77,7 @@ export class CanvasRenderer {
       : null;
 
     // Draw environment (world space)
-    EnvironmentRenderer.draw(ctx, state.level, layout, landedInfo);
+    EnvironmentRenderer.draw(ctx, state.level, layout, landedInfo, viewY);
 
     // Wind particles (world space, before faller so they appear behind)
     if (state.level.wind !== 0) {
@@ -132,7 +132,7 @@ export class CanvasRenderer {
       ctx, screenX, fallerWorldY, drawAngle,
       f.phase, drawTucked, pivotAtFeet, state.elapsedTime,
       state.level.level, state.jumpTimer, state.level.targetType,
-      state.landedTime,
+      state.landedTime, state.backFall,
     );
 
     ctx.restore();

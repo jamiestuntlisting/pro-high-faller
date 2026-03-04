@@ -56,6 +56,12 @@ export function LandingResult({
         )}
 
         <div style={styles.stats}>
+          {formatFlips(result.totalRotation) && (
+            <div style={styles.row}>
+              <span style={styles.statLabel}>ROTATION</span>
+              <span style={{ color: '#cc88ff' }}>{formatFlips(result.totalRotation)}</span>
+            </div>
+          )}
           <div style={styles.row}>
             <span style={styles.statLabel}>INJURY</span>
             <span style={{ color: result.injuryPoints > 20 ? '#aa4444' : result.injuryPoints > 0 ? '#aaaa44' : '#55aa55' }}>
@@ -113,6 +119,25 @@ export function LandingResult({
       </div>
     </div>
   );
+}
+
+function formatFlips(totalRotation: number): string {
+  const flipDegrees = Math.abs(totalRotation) - 90; // subtract the lean
+  if (flipDegrees < 45) return '';
+  const quarters = Math.round(flipDegrees / 90);
+  const fullFlips = Math.floor(quarters / 4);
+  const remainder = quarters % 4;
+
+  if (fullFlips === 0) {
+    if (remainder === 1) return '1/4 flip';
+    if (remainder === 2) return '1/2 flip';
+    if (remainder === 3) return '3/4 flip';
+    return '';
+  }
+
+  if (remainder === 0) return `${fullFlips} flip${fullFlips > 1 ? 's' : ''}`;
+  const frac = remainder === 1 ? '1/4' : remainder === 2 ? '1/2' : '3/4';
+  return `${fullFlips} and ${frac} flips`;
 }
 
 function gradeColor(grade: string): string {

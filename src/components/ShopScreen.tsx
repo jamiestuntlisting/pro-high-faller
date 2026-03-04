@@ -21,6 +21,18 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'stemcell',  name: 'STEM CELL TREATMENT', cost: 3000, healthBonus: 0, healthMin: -10, healthMax: 120, description: 'Cutting edge. Results may vary... wildly.' },
 ];
 
+/** Stem cells degrade with each use — initially great, then body starts rejecting */
+function getStemCellRange(uses: number): { min: number; max: number } {
+  // Use 0: -10 to +120 (avg +55, almost always positive)
+  // Use 1: -30 to +100 (avg +35, mostly positive)
+  // Use 2: -50 to +80  (avg +15, coin flip)
+  // Use 3: -70 to +60  (avg -5, expected value negative)
+  // Use 4: -90 to +40  (avg -25, mostly rejection)
+  // Use 5+: -110 to +20 (avg -45, likely rejection)
+  const decay = Math.min(uses, 5) * 20;
+  return { min: -10 - decay, max: 120 - decay };
+}
+
 function getDepletedQuip(itemId: string): string {
   switch (itemId) {
     case 'ice': return "You've iced everything iceable";
@@ -69,14 +81,16 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
 
     setPurchased(true);
     if (item.healthMin !== undefined && item.healthMax !== undefined) {
-      // Random-range item: roll the dice
-      const roll = Math.floor(Math.random() * (item.healthMax - item.healthMin + 1)) + item.healthMin;
+      // Stem cell: range degrades with each use (body builds resistance)
+      const used = itemUses[item.id] || 0;
+      const { min, max } = getStemCellRange(used);
+      const roll = Math.floor(Math.random() * (max - min + 1)) + min;
       setStemResult(roll);
       onPurchase({ ...item, healthBonus: roll });
     } else {
       onPurchase(item);
     }
-  }, [careerEarnings, onPurchase]);
+  }, [careerEarnings, itemUses, onPurchase]);
 
   const healthPct = Math.round((Math.max(0, careerHealth) / 200) * 100);
 
@@ -146,9 +160,11 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
                 <div style={styles.itemBottom}>
                   <span style={styles.itemDesc}>{item.description}</span>
                   <div style={styles.itemEffects}>
-                    {isRandom ? (
-                      <span style={{ color: '#cc88ff' }}>{item.healthMin} to +{item.healthMax}HP</span>
-                    ) : (
+                    {isRandom ? (() => {
+                      const { min, max } = getStemCellRange(used);
+                      const risky = max <= 40;
+                      return <span style={{ color: risky ? '#aa4444' : '#cc88ff' }}>{min} to +{max}HP</span>;
+                    })() : (
                       <span style={{ color: '#44aa44' }}>+{item.healthBonus}HP</span>
                     )}
                   </div>
@@ -165,7 +181,13 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
                         {remaining} left
                       </span>
                     )
-                  ) : (
+                  ) : isRandom ? (() => {
+                    const { max } = getStemCellRange(used);
+                    if (used === 0) return <span style={{ color: '#cc88ff' }}>untested</span>;
+                    if (max <= 20) return <span style={{ color: '#aa4444', fontSize: '6px' }}>body rejecting</span>;
+                    if (max <= 60) return <span style={{ color: '#aaaa44' }}>resistance building</span>;
+                    return <span style={{ color: '#cc88ff' }}>#{used + 1}</span>;
+                  })() : (
                     <span style={{ color: '#666' }}>∞</span>
                   )}
                 </div>

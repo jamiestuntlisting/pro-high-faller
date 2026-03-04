@@ -192,6 +192,7 @@ export function createGameState(level: LevelConfig): GameState {
     introPanDuration: needsPan ? 2.0 : 0,
     crewText: null,
     crewCallout: null,
+    backFall: Math.random() < 0.2,
     landedTime: 0,
     prevX: 0,
     prevY: level.height,

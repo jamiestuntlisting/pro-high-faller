@@ -126,6 +126,7 @@ export class GameLoop {
             pay: 0,
             credibilityPoints: -8,
             horizontalAccuracy: 0,
+            totalRotation: this.state.faller.totalRotation,
           };
         } else if (this.state.countdown.jumpedBeforeRolling) {
           // Jumped before cameras were rolling — voided take, but still physically hit the ground

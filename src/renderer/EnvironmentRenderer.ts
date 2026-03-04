@@ -85,7 +85,7 @@ const COSTUME_THEMES: string[] = [
   'stormyCity',  // 6: Chaplin — moody silent film city
   'nightCity',   // 7: Disco — nightclub scene
   'sunset',      // 8: Woman in Dress — romantic dramatic backdrop
-  'dusk',        // 9: Superhero — epic twilight sky
+  'nightCity',   // 9: Superhero — dark sky, red cape pops
   'tropical',    // 10: Hawaiian — warm ocean sunset
   'mountains',   // 11: Green Jacket — outdoors, wilderness
   'dusk',        // 12: Black Tee — casual evening
@@ -147,24 +147,38 @@ export function draw(
   level: LevelConfig,
   layout: SceneLayout,
   landedInfo?: LandedInfo | null,
+  viewY: number = 0,
 ): void {
   const { groundY, buildingTopY, buildingEdgeX } = layout;
   const theme = getTheme(level.level);
 
-  // === SKY with gradient === (extends above building top for camera scrolling)
-  const skyTop = buildingTopY - GAME_HEIGHT;
-  const skyH = groundY - skyTop;
+  // === SKY + DISTANT ATMOSPHERE with parallax ===
+  // Sky/stars/moon/clouds move at 30% of camera speed for depth perception
+  // on tall levels. Partially undo the camera transform for these elements.
+  const skyParallax = 0.7;
+  ctx.save();
+  ctx.translate(0, viewY * skyParallax);
+
+  const skyTop = buildingTopY - GAME_HEIGHT * 2;
+  const skyBottom = groundY + GAME_HEIGHT;
   const grad = ctx.createLinearGradient(0, skyTop, 0, groundY);
   for (const [pos, color] of theme.skyStops) {
     grad.addColorStop(pos, color);
   }
   ctx.fillStyle = grad;
-  ctx.fillRect(0, skyTop, GAME_WIDTH, skyH);
+  ctx.fillRect(0, skyTop, GAME_WIDTH, skyBottom - skyTop);
 
-  // === ATMOSPHERE (stars, moon, clouds, silhouettes) ===
-  if (theme.silhouette || theme.stars || theme.moon || theme.clouds) {
-    drawAtmosphere(ctx, theme, groundY, skyTop, buildingEdgeX);
-  }
+  if (theme.stars) drawStars(ctx, skyTop, groundY, buildingEdgeX);
+  if (theme.moon) drawMoon(ctx, skyTop, groundY);
+  if (theme.clouds) drawClouds(ctx, skyTop, groundY, buildingEdgeX);
+
+  ctx.restore();
+
+  // === SILHOUETTES (no parallax — anchored to ground) ===
+  if (theme.silhouette === 'city') drawCitySkyline(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'mountains') drawMountainRange(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'desert') drawDesertLandscape(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'ocean') drawOceanscape(ctx, groundY, buildingEdgeX);
 
   // === GROUND ===
   ctx.fillStyle = theme.groundColor;
@@ -196,27 +210,6 @@ export function draw(
 // ========================================================
 //  ATMOSPHERE — stars, moon, clouds, silhouettes
 // ========================================================
-
-function drawAtmosphere(
-  ctx: CanvasRenderingContext2D,
-  theme: BgTheme,
-  groundY: number,
-  skyTop: number,
-  buildingEdgeX: number,
-): void {
-  ctx.save();
-
-  if (theme.stars) drawStars(ctx, skyTop, groundY, buildingEdgeX);
-  if (theme.moon) drawMoon(ctx, skyTop, groundY);
-  if (theme.clouds) drawClouds(ctx, skyTop, groundY, buildingEdgeX);
-
-  if (theme.silhouette === 'city') drawCitySkyline(ctx, groundY, buildingEdgeX);
-  else if (theme.silhouette === 'mountains') drawMountainRange(ctx, groundY, buildingEdgeX);
-  else if (theme.silhouette === 'desert') drawDesertLandscape(ctx, groundY, buildingEdgeX);
-  else if (theme.silhouette === 'ocean') drawOceanscape(ctx, groundY, buildingEdgeX);
-
-  ctx.restore();
-}
 
 // ---- Stars ----
 
@@ -964,7 +957,7 @@ function drawLandingZone(
     const matTop = groundY - matHeight;
 
     // Solid opaque background behind landing zone — prevents sky bleed-through
-    ctx.fillStyle = level.targetType === 'airbag' ? '#0e0e0e' : '#0e0a06';
+    ctx.fillStyle = level.targetType === 'airbag' ? '#0e0e0e' : '#2a1c0e';
     ctx.fillRect(left, matTop, right - left, matHeight);
 
     if (level.targetType === 'airbag') {
@@ -1005,18 +998,26 @@ function drawLandingZone(
         ctx.fillText('-', mx, groundY - 4);
       }
     } else {
-      // Boxes — stack rows of [##] scaling with height
+      // Boxes — cardboard box stack with store logos
       // When landed, crush and scatter boxes at impact point
       ctx.textBaseline = 'top';
       const boxRows = Math.max(2, Math.floor(matHeight / 4));
+      // Pre-assign logos to box positions (deterministic from position)
+      const logos = ['##', 'HD', 'LW', '##', '##', 'HD', '##', 'LW', '##', '##'];
       for (let r = 0; r < boxRows; r++) {
-        const shade = r % 2 === 0 ? RENDER.ASCII_DIM : '#443322';
-        ctx.fillStyle = shade;
+        const shade = r % 2 === 0 ? '#bb8844' : '#997733'; // cardboard brown
         const baseOffset = (r % 2) * 6;
+        let boxIdx = 0;
         for (let mx = left + baseOffset; mx < right; mx += 12) {
           let drawX = mx;
           let drawY = matTop + r * 4;
-          let boxText = '[##]';
+          const logoKey = logos[((mx * 3 + r * 7) % logos.length + logos.length) % logos.length];
+          let boxText = `[${logoKey}]`;
+          let boxColor = shade;
+
+          // Logo colors
+          if (logoKey === 'HD') boxColor = '#dd6611'; // Home Depot orange
+          else if (logoKey === 'LW') boxColor = '#4477bb'; // Lowe's blue
 
           if (landedInfo) {
             const dist = Math.abs(mx - landedInfo.x);
@@ -1029,7 +1030,7 @@ function drawLandingZone(
                 drawY += Math.round(3 * Math.exp(-(dist * dist) / 120));
                 if (dist < 8 && r === 0) {
                   boxText = '[__]'; // crushed flat
-                  ctx.fillStyle = '#332211';
+                  boxColor = '#665533';
                 }
               } else if (r < 4) {
                 const hash = ((mx * 7 + r * 13) % 3) - 1;
@@ -1038,9 +1039,9 @@ function drawLandingZone(
             }
           }
 
+          ctx.fillStyle = boxColor;
           ctx.fillText(boxText, drawX, drawY);
-          // Restore shade after crushed box override
-          ctx.fillStyle = shade;
+          boxIdx++;
         }
       }
     }
