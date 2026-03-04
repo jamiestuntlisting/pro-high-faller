@@ -132,6 +132,7 @@ export class CanvasRenderer {
       ctx, screenX, fallerWorldY, drawAngle,
       f.phase, drawTucked, pivotAtFeet, state.elapsedTime,
       state.level.level, state.jumpTimer, state.level.targetType,
+      state.landedTime,
     );
 
     ctx.restore();

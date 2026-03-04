@@ -319,7 +319,7 @@ function drawCitySkyline(
 
   for (const b of farBuildings) {
     if (b.x <= buildingEdgeX - 5) continue;
-    ctx.fillStyle = 'rgba(12, 12, 28, 0.6)';
+    ctx.fillStyle = 'rgba(18, 20, 40, 0.55)';
     ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
 
     // Window grid
@@ -327,7 +327,7 @@ function drawCitySkyline(
       for (let wx = b.x + 2; wx < b.x + b.w - 2; wx += 4) {
         const lit = ((wx * 7 + wy * 3) % 5) < 2;
         ctx.fillStyle = lit
-          ? 'rgba(255, 200, 100, 0.25)'
+          ? 'rgba(255, 200, 100, 0.3)'
           : 'rgba(80, 100, 140, 0.12)';
         ctx.fillRect(wx, wy, 2, 3);
       }
@@ -344,14 +344,14 @@ function drawCitySkyline(
 
   for (const b of nearBuildings) {
     if (b.x <= buildingEdgeX - 5) continue;
-    ctx.fillStyle = 'rgba(8, 8, 20, 0.7)';
+    ctx.fillStyle = 'rgba(14, 14, 30, 0.65)';
     ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
 
     for (let wy = groundY - b.h + 4; wy < groundY - 3; wy += 5) {
       for (let wx = b.x + 2; wx < b.x + b.w - 3; wx += 5) {
         const lit = ((wx * 11 + wy * 7) % 7) < 3;
         ctx.fillStyle = lit
-          ? 'rgba(255, 220, 120, 0.4)'
+          ? 'rgba(255, 220, 120, 0.45)'
           : 'rgba(60, 80, 120, 0.15)';
         ctx.fillRect(wx, wy, 2, 3);
       }
@@ -609,6 +609,11 @@ function drawBuilding(
   groundY: number,
   heightFt: number,
 ): void {
+  // Solid opaque background behind entire building — prevents sky gradient
+  // from bleeding through gaps between ASCII characters
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, topY, edgeX, groundY - topY);
+
   ctx.font = '7px monospace';
   const cw = 6;
   const ch = 8;
@@ -616,7 +621,6 @@ function drawBuilding(
   const cols = Math.floor(edgeX / cw);
   const startRow = Math.floor(topY / ch);
   const endRow = Math.floor(groundY / ch);
-
 
   // Floor height: ~10ft per floor = 40px = 5 rows
   const rowsPerFloor = 5;
@@ -906,6 +910,10 @@ function drawLandingZone(
     }
   } else {
     const matTop = groundY - matHeight;
+
+    // Solid opaque background behind landing zone — prevents sky bleed-through
+    ctx.fillStyle = level.targetType === 'airbag' ? '#0e0e0e' : '#0e0a06';
+    ctx.fillRect(left, matTop, right - left, matHeight);
 
     if (level.targetType === 'airbag') {
       // Compute indent at each column if performer has landed

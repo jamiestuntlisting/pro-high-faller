@@ -89,6 +89,7 @@ export function draw(
   levelNum = 1,
   jumpTimer = 0,
   targetType: TargetType = 'airbag',
+  landedTime = 0,
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -105,7 +106,7 @@ export function draw(
 
   if (phase === 'LANDED') {
     // No rotation for landed — draw in a natural ground-relative pose
-    drawLanded(ctx, costume, targetType, angle);
+    drawLanded(ctx, costume, targetType, angle, landedTime);
   } else {
     const oy = pivotAtFeet ? -bodyH : -bodyH / 2;
 
@@ -713,6 +714,7 @@ function drawLanded(
   costume: Costume,
   targetType: TargetType,
   angle: number,
+  landedTime: number,
 ): void {
   // Origin is at the landing point (ground surface level)
   // y < 0 is above surface, y > 0 is below
@@ -933,11 +935,30 @@ function drawLanded(
     ctx.stroke();
   }
 
-  // Hat knocked off to the side
+  // Hat/wig — falls from the sky and settles on the ground
   if (costume.hat) {
+    const settleTime = 1.8; // seconds for hat to drift down and settle
+    const restX = 10;
+    const restY = -14;
+    const restRot = 0.4;
+
+    let hatX: number, hatY: number, hatRot: number;
+    if (landedTime < settleTime) {
+      const t = landedTime / settleTime;
+      const ease = 1 - (1 - t) * (1 - t); // ease-out quad
+      // Start from high up and off to the side, settle to rest position
+      hatX = restX + (1 - ease) * 8;
+      hatY = restY - (1 - ease) * 40;
+      hatRot = restRot + (1 - ease) * 4; // spinning, settles to slight tilt
+    } else {
+      hatX = restX;
+      hatY = restY;
+      hatRot = restRot;
+    }
+
     ctx.save();
-    ctx.translate(10, -14);
-    ctx.rotate(0.4);
+    ctx.translate(hatX, hatY);
+    ctx.rotate(hatRot);
     ctx.fillStyle = costume.hat.color;
     drawHatShape(ctx, costume.hat.style);
     ctx.restore();

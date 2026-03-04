@@ -81,6 +81,12 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
 
   return (
     <div style={styles.container}>
+      <style>{`
+        @keyframes shopPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+      `}</style>
       <div style={styles.panel}>
         <h2 style={styles.title}>THE MORNING AFTER</h2>
         <div style={styles.subtitle}>Your body's been through hell.</div>
@@ -166,8 +172,9 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
                   style={{
                     ...styles.buyBtn,
                     cursor: disabled ? 'default' : 'pointer',
-                    borderColor: disabled ? '#333' : isRandom ? '#cc88ff' : '#44aa44',
-                    color: disabled ? '#333' : isRandom ? '#cc88ff' : '#44aa44',
+                    borderColor: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
+                    color: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
+                    animation: disabled ? 'none' : 'shopPulse 2.5s ease-in-out infinite',
                   }}
                   onClick={() => !disabled && handleBuy(item)}
                   disabled={disabled}
@@ -317,8 +324,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '8px',
     padding: '2px 8px',
     background: 'transparent',
-    border: '1px solid #44aa44',
-    color: '#44aa44',
+    border: '1px solid #ee8833',
+    color: '#ee8833',
     cursor: 'pointer',
   },
   skipBtn: {
