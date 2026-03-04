@@ -95,6 +95,10 @@ export function draw(
   ctx.save();
   ctx.translate(x, y);
 
+  // Dark outline glow for separation from background
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 4;
+
   const color = isTucked ? RENDER.ASCII_BRIGHT : RENDER.FALLER_COLOR;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
@@ -943,7 +947,7 @@ function drawLanded(
   // Hat/wig — falls from the sky and settles on the ground
   // Start position matches the fly-off trajectory (rightward + upward)
   if (costume.hat) {
-    const settleTime = 2.5; // seconds for hat to drift down and settle
+    const settleTime = 1.2; // seconds for hat to flutter down
     const restX = 10;
     const restY = -14;
     const restRot = 0.4;
@@ -952,10 +956,10 @@ function drawLanded(
     if (landedTime < settleTime) {
       const t = landedTime / settleTime;
       const ease = 1 - (1 - t) * (1 - t); // ease-out quad
-      // Start far right and high up (matching fly-off direction), descend to rest
-      hatX = restX + (1 - ease) * 20;
-      hatY = restY - (1 - ease) * 60;
-      hatRot = restRot + (1 - ease) * 6;
+      // Start slightly above and to the side, flutter down to rest
+      hatX = restX + (1 - ease) * 5;
+      hatY = restY - (1 - ease) * 14;
+      hatRot = restRot + (1 - ease) * 2;
     } else {
       hatX = restX;
       hatY = restY;
