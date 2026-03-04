@@ -5,25 +5,61 @@ import { GAME_WIDTH, GAME_HEIGHT, RENDER, PIXELS_PER_FOOT, naturalLandingDistanc
 export const BUILDING_WIDTH_PX = 55;
 
 // ========================================================
-//  BACKGROUND THEMES — subtle sky gradients + silhouettes
+//  BACKGROUND THEMES — vivid sky gradients + silhouettes
 // ========================================================
 
 interface BgTheme {
-  skyTop: string;       // color at top of sky
-  skyBottom: string;    // color near horizon
-  groundColor: string;  // ground tint
+  skyStops: [number, string][];  // multi-stop gradient [position, color]
+  groundColor: string;
   silhouette?: 'city' | 'mountains' | 'desert' | 'ocean';
+  stars?: boolean;
+  moon?: boolean;
+  clouds?: boolean;
 }
 
 const THEMES: Record<string, BgTheme> = {
-  nightCity:   { skyTop: '#060612', skyBottom: '#0e1428', groundColor: '#0c0c10', silhouette: 'city' },
-  sunset:      { skyTop: '#1a0a1e', skyBottom: '#2a1008', groundColor: '#140c08', silhouette: 'city' },
-  overcast:    { skyTop: '#0c0e12', skyBottom: '#141618', groundColor: '#0e0e0e' },
-  dusk:        { skyTop: '#08061a', skyBottom: '#121028', groundColor: '#0a0a12', silhouette: 'city' },
-  mountains:   { skyTop: '#060a14', skyBottom: '#0c1420', groundColor: '#0a0e0a', silhouette: 'mountains' },
-  desert:      { skyTop: '#1a1008', skyBottom: '#1e1408', groundColor: '#14100a', silhouette: 'desert' },
-  ocean:       { skyTop: '#06101a', skyBottom: '#081420', groundColor: '#080e14', silhouette: 'ocean' },
-  dawn:        { skyTop: '#120818', skyBottom: '#1a0c14', groundColor: '#100a0e' },
+  nightCity: {
+    skyStops: [[0, '#050520'], [0.5, '#0c0c38'], [1, '#141430']],
+    groundColor: '#0a0a14',
+    silhouette: 'city',
+    stars: true,
+    moon: true,
+  },
+  sunset: {
+    skyStops: [[0, '#15032e'], [0.2, '#5a1040'], [0.45, '#aa2818'], [0.7, '#dd6611'], [0.9, '#eeaa22'], [1, '#ffcc44']],
+    groundColor: '#1a0e06',
+    silhouette: 'city',
+  },
+  overcast: {
+    skyStops: [[0, '#1e2228'], [0.5, '#2e343c'], [1, '#3a4048']],
+    groundColor: '#161a1e',
+    clouds: true,
+  },
+  dusk: {
+    skyStops: [[0, '#08082e'], [0.4, '#1a1050'], [0.7, '#301a4a'], [1, '#401a38']],
+    groundColor: '#0c0a18',
+    silhouette: 'city',
+    stars: true,
+  },
+  mountains: {
+    skyStops: [[0, '#102244'], [0.4, '#2a5588'], [0.7, '#4499bb'], [1, '#66bbcc']],
+    groundColor: '#141e14',
+    silhouette: 'mountains',
+  },
+  desert: {
+    skyStops: [[0, '#402800'], [0.3, '#886030'], [0.6, '#bb8833'], [1, '#ddaa44']],
+    groundColor: '#221808',
+    silhouette: 'desert',
+  },
+  ocean: {
+    skyStops: [[0, '#0a1e44'], [0.4, '#1a4477'], [0.7, '#2a77aa'], [1, '#44aacc']],
+    groundColor: '#081622',
+    silhouette: 'ocean',
+  },
+  dawn: {
+    skyStops: [[0, '#180a33'], [0.2, '#441560'], [0.45, '#bb3355'], [0.7, '#ee7744'], [1, '#ffdd77']],
+    groundColor: '#1a1008',
+  },
 };
 
 // Map levels to themes by production name feel
@@ -44,7 +80,7 @@ export function getTheme(level: number): BgTheme {
 }
 
 export function getSkyTopColor(level: number): string {
-  return getTheme(level).skyTop;
+  return getTheme(level).skyStops[0][1];
 }
 
 export interface SceneLayout {
@@ -93,14 +129,15 @@ export function draw(
   const skyTop = buildingTopY - GAME_HEIGHT;
   const skyH = groundY - skyTop;
   const grad = ctx.createLinearGradient(0, skyTop, 0, groundY);
-  grad.addColorStop(0, theme.skyTop);
-  grad.addColorStop(1, theme.skyBottom);
+  for (const [pos, color] of theme.skyStops) {
+    grad.addColorStop(pos, color);
+  }
   ctx.fillStyle = grad;
   ctx.fillRect(0, skyTop, GAME_WIDTH, skyH);
 
-  // === DISTANT SILHOUETTES (behind building, very subtle) ===
-  if (theme.silhouette) {
-    drawSilhouette(ctx, theme.silhouette, groundY, buildingEdgeX);
+  // === ATMOSPHERE (stars, moon, clouds, silhouettes) ===
+  if (theme.silhouette || theme.stars || theme.moon || theme.clouds) {
+    drawAtmosphere(ctx, theme, groundY, skyTop, buildingEdgeX);
   }
 
   // === GROUND ===
@@ -131,117 +168,438 @@ export function draw(
 }
 
 // ========================================================
-//  DISTANT SILHOUETTES — very dim shapes behind everything
+//  ATMOSPHERE — stars, moon, clouds, silhouettes
 // ========================================================
 
-function drawSilhouette(
+function drawAtmosphere(
   ctx: CanvasRenderingContext2D,
-  type: string,
+  theme: BgTheme,
   groundY: number,
+  skyTop: number,
   buildingEdgeX: number,
 ): void {
   ctx.save();
 
-  if (type === 'city') {
-    // Distant city skyline — very dim blocks behind the action area
-    ctx.fillStyle = 'rgba(255,255,255,0.025)';
-    const buildings = [
-      { x: 80, w: 12, h: 35 }, { x: 100, w: 8, h: 22 }, { x: 115, w: 14, h: 45 },
-      { x: 140, w: 10, h: 28 }, { x: 160, w: 16, h: 52 }, { x: 185, w: 10, h: 30 },
-      { x: 200, w: 12, h: 38 }, { x: 220, w: 8, h: 20 }, { x: 240, w: 14, h: 42 },
-      { x: 260, w: 10, h: 26 }, { x: 280, w: 12, h: 34 }, { x: 300, w: 8, h: 18 },
-    ];
-    for (const b of buildings) {
-      if (b.x > buildingEdgeX) {
-        ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
-      }
+  if (theme.stars) drawStars(ctx, skyTop, groundY, buildingEdgeX);
+  if (theme.moon) drawMoon(ctx, skyTop, groundY);
+  if (theme.clouds) drawClouds(ctx, skyTop, groundY, buildingEdgeX);
+
+  if (theme.silhouette === 'city') drawCitySkyline(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'mountains') drawMountainRange(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'desert') drawDesertLandscape(ctx, groundY, buildingEdgeX);
+  else if (theme.silhouette === 'ocean') drawOceanscape(ctx, groundY, buildingEdgeX);
+
+  ctx.restore();
+}
+
+// ---- Stars ----
+
+function drawStars(
+  ctx: CanvasRenderingContext2D,
+  skyTop: number,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  const skyH = groundY - skyTop;
+  const usableW = GAME_WIDTH - buildingEdgeX - 8;
+
+  for (let i = 0; i < 50; i++) {
+    const x = ((i * 157 + 31) % usableW) + buildingEdgeX + 8;
+    const yFrac = ((i * 89 + 17) % 100) / 100;
+    const y = skyTop + yFrac * skyH * 0.85;
+    const bright = ((i * 43 + 7) % 10) / 10;
+    const alpha = 0.3 + bright * 0.6;
+
+    ctx.fillStyle = `rgba(255, 255, 240, ${alpha})`;
+    ctx.fillRect(x, y, 1, 1);
+
+    // Brighter stars get a tiny cross twinkle
+    if (bright > 0.7) {
+      ctx.fillStyle = `rgba(255, 255, 240, ${alpha * 0.4})`;
+      ctx.fillRect(x - 1, y, 3, 1);
+      ctx.fillRect(x, y - 1, 1, 3);
     }
-    // Slightly brighter windows on a couple buildings
-    ctx.fillStyle = 'rgba(255,255,200,0.03)';
-    ctx.fillRect(163, groundY - 48, 3, 2);
-    ctx.fillRect(167, groundY - 42, 3, 2);
-    ctx.fillRect(118, groundY - 38, 3, 2);
-    ctx.fillRect(243, groundY - 36, 3, 2);
+  }
+}
 
-  } else if (type === 'mountains') {
-    // Distant mountain range — subtle triangular shapes
-    ctx.fillStyle = 'rgba(255,255,255,0.03)';
-    ctx.beginPath();
-    ctx.moveTo(60, groundY);
-    ctx.lineTo(110, groundY - 55);
-    ctx.lineTo(160, groundY);
-    ctx.fill();
+// ---- Moon ----
 
-    ctx.fillStyle = 'rgba(255,255,255,0.02)';
-    ctx.beginPath();
-    ctx.moveTo(120, groundY);
-    ctx.lineTo(190, groundY - 70);
-    ctx.lineTo(260, groundY);
-    ctx.fill();
+function drawMoon(
+  ctx: CanvasRenderingContext2D,
+  skyTop: number,
+  groundY: number,
+): void {
+  const skyH = groundY - skyTop;
+  const x = GAME_WIDTH - 45;
+  const y = skyTop + skyH * 0.12;
+  const r = 10;
 
-    ctx.fillStyle = 'rgba(255,255,255,0.025)';
-    ctx.beginPath();
-    ctx.moveTo(200, groundY);
-    ctx.lineTo(250, groundY - 45);
-    ctx.lineTo(320, groundY);
-    ctx.fill();
+  // Soft glow
+  const glow = ctx.createRadialGradient(x, y, r, x, y, r * 3);
+  glow.addColorStop(0, 'rgba(200, 200, 240, 0.12)');
+  glow.addColorStop(1, 'rgba(200, 200, 240, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 3, 0, Math.PI * 2);
+  ctx.fill();
 
-    // Snow caps
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.beginPath();
-    ctx.moveTo(105, groundY - 50);
-    ctx.lineTo(110, groundY - 55);
-    ctx.lineTo(115, groundY - 50);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(183, groundY - 64);
-    ctx.lineTo(190, groundY - 70);
-    ctx.lineTo(197, groundY - 64);
-    ctx.fill();
+  // Moon disc
+  ctx.fillStyle = '#dddde6';
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
 
-  } else if (type === 'desert') {
-    // Distant mesa / butte silhouettes
-    ctx.fillStyle = 'rgba(255,200,150,0.03)';
-    // Large mesa
-    ctx.beginPath();
-    ctx.moveTo(130, groundY);
-    ctx.lineTo(140, groundY - 30);
-    ctx.lineTo(200, groundY - 30);
-    ctx.lineTo(210, groundY);
-    ctx.fill();
-    // Small butte
-    ctx.beginPath();
-    ctx.moveTo(240, groundY);
-    ctx.lineTo(252, groundY - 22);
-    ctx.lineTo(268, groundY - 22);
-    ctx.lineTo(280, groundY);
-    ctx.fill();
-    // Distant butte
-    ctx.fillStyle = 'rgba(255,200,150,0.02)';
-    ctx.beginPath();
-    ctx.moveTo(85, groundY);
-    ctx.lineTo(95, groundY - 18);
-    ctx.lineTo(115, groundY - 18);
-    ctx.lineTo(125, groundY);
-    ctx.fill();
+  // Craters
+  ctx.fillStyle = '#bbbbcc';
+  ctx.beginPath();
+  ctx.arc(x - 3, y - 2, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 4, y + 3, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 1, y + 1, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+}
 
-  } else if (type === 'ocean') {
-    // Gentle wave horizon line
-    ctx.strokeStyle = 'rgba(100,160,200,0.04)';
-    ctx.lineWidth = 1;
-    for (let row = 0; row < 3; row++) {
-      const y = groundY - 8 - row * 6;
-      ctx.beginPath();
-      for (let x = buildingEdgeX + 10; x < GAME_WIDTH; x += 2) {
-        const wave = Math.sin(x * 0.08 + row * 2) * 2;
-        if (x === buildingEdgeX + 10) ctx.moveTo(x, y + wave);
-        else ctx.lineTo(x, y + wave);
+// ---- Clouds ----
+
+function drawClouds(
+  ctx: CanvasRenderingContext2D,
+  skyTop: number,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  const skyH = groundY - skyTop;
+  const clouds = [
+    { x: 80, y: 0.15, w: 55, h: 14 },
+    { x: 170, y: 0.25, w: 70, h: 16 },
+    { x: 260, y: 0.1, w: 50, h: 12 },
+    { x: 100, y: 0.42, w: 60, h: 14 },
+    { x: 210, y: 0.55, w: 75, h: 16 },
+    { x: 65, y: 0.65, w: 45, h: 12 },
+    { x: 285, y: 0.45, w: 55, h: 13 },
+  ];
+
+  for (const c of clouds) {
+    const cy = skyTop + c.y * skyH;
+    if (c.x + c.w <= buildingEdgeX) continue;
+
+    ctx.fillStyle = 'rgba(180, 185, 195, 0.08)';
+    ctx.beginPath();
+    ctx.ellipse(c.x + c.w * 0.3, cy, c.w * 0.35, c.h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(200, 205, 215, 0.06)';
+    ctx.beginPath();
+    ctx.ellipse(c.x + c.w * 0.55, cy - c.h * 0.15, c.w * 0.3, c.h * 0.48, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(180, 185, 195, 0.07)';
+    ctx.beginPath();
+    ctx.ellipse(c.x + c.w * 0.75, cy + c.h * 0.05, c.w * 0.28, c.h * 0.36, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ---- City Skyline ----
+
+function drawCitySkyline(
+  ctx: CanvasRenderingContext2D,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  // Far layer — taller, dimmer
+  const farBuildings = [
+    { x: 70, w: 18, h: 60 }, { x: 95, w: 12, h: 40 },
+    { x: 115, w: 20, h: 78 }, { x: 145, w: 14, h: 50 },
+    { x: 165, w: 22, h: 92 }, { x: 195, w: 14, h: 55 },
+    { x: 215, w: 18, h: 68 }, { x: 240, w: 12, h: 35 },
+    { x: 260, w: 20, h: 75 }, { x: 285, w: 16, h: 48 },
+    { x: 305, w: 14, h: 58 },
+  ];
+
+  for (const b of farBuildings) {
+    if (b.x <= buildingEdgeX - 5) continue;
+    ctx.fillStyle = 'rgba(12, 12, 28, 0.6)';
+    ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
+
+    // Window grid
+    for (let wy = groundY - b.h + 5; wy < groundY - 4; wy += 6) {
+      for (let wx = b.x + 2; wx < b.x + b.w - 2; wx += 4) {
+        const lit = ((wx * 7 + wy * 3) % 5) < 2;
+        ctx.fillStyle = lit
+          ? 'rgba(255, 200, 100, 0.25)'
+          : 'rgba(80, 100, 140, 0.12)';
+        ctx.fillRect(wx, wy, 2, 3);
       }
-      ctx.stroke();
     }
   }
 
-  ctx.restore();
+  // Near layer — shorter, darker, brighter windows
+  const nearBuildings = [
+    { x: 85, w: 15, h: 45 }, { x: 108, w: 22, h: 55 },
+    { x: 138, w: 16, h: 38 }, { x: 180, w: 20, h: 70 },
+    { x: 208, w: 14, h: 42 }, { x: 248, w: 18, h: 54 },
+    { x: 275, w: 22, h: 64 }, { x: 302, w: 16, h: 44 },
+  ];
+
+  for (const b of nearBuildings) {
+    if (b.x <= buildingEdgeX - 5) continue;
+    ctx.fillStyle = 'rgba(8, 8, 20, 0.7)';
+    ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
+
+    for (let wy = groundY - b.h + 4; wy < groundY - 3; wy += 5) {
+      for (let wx = b.x + 2; wx < b.x + b.w - 3; wx += 5) {
+        const lit = ((wx * 11 + wy * 7) % 7) < 3;
+        ctx.fillStyle = lit
+          ? 'rgba(255, 220, 120, 0.4)'
+          : 'rgba(60, 80, 120, 0.15)';
+        ctx.fillRect(wx, wy, 2, 3);
+      }
+    }
+  }
+}
+
+// ---- Mountain Range ----
+
+function drawMountainRange(
+  ctx: CanvasRenderingContext2D,
+  groundY: number,
+  _buildingEdgeX: number,
+): void {
+  // Far range — lighter, hazier
+  ctx.fillStyle = 'rgba(40, 60, 100, 0.4)';
+  ctx.beginPath();
+  ctx.moveTo(50, groundY);
+  ctx.lineTo(80, groundY - 70);
+  ctx.lineTo(110, groundY - 50);
+  ctx.lineTo(150, groundY - 98);
+  ctx.lineTo(190, groundY - 60);
+  ctx.lineTo(220, groundY - 82);
+  ctx.lineTo(260, groundY - 55);
+  ctx.lineTo(300, groundY - 78);
+  ctx.lineTo(330, groundY - 45);
+  ctx.lineTo(330, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Far snow caps
+  ctx.fillStyle = 'rgba(220, 235, 255, 0.35)';
+  ctx.beginPath();
+  ctx.moveTo(138, groundY - 85);
+  ctx.lineTo(150, groundY - 98);
+  ctx.lineTo(162, groundY - 85);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(288, groundY - 66);
+  ctx.lineTo(300, groundY - 78);
+  ctx.lineTo(312, groundY - 66);
+  ctx.closePath();
+  ctx.fill();
+
+  // Near range — darker, more solid
+  ctx.fillStyle = 'rgba(20, 35, 55, 0.65)';
+  ctx.beginPath();
+  ctx.moveTo(40, groundY);
+  ctx.lineTo(90, groundY - 42);
+  ctx.lineTo(120, groundY - 28);
+  ctx.lineTo(165, groundY - 58);
+  ctx.lineTo(205, groundY - 36);
+  ctx.lineTo(245, groundY - 50);
+  ctx.lineTo(285, groundY - 32);
+  ctx.lineTo(320, groundY - 44);
+  ctx.lineTo(330, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Near snow caps
+  ctx.fillStyle = 'rgba(240, 245, 255, 0.5)';
+  ctx.beginPath();
+  ctx.moveTo(155, groundY - 50);
+  ctx.lineTo(165, groundY - 58);
+  ctx.lineTo(175, groundY - 50);
+  ctx.closePath();
+  ctx.fill();
+
+  // Pine tree silhouettes along near ridge
+  ctx.fillStyle = 'rgba(10, 28, 18, 0.5)';
+  const nearRidgePoints: [number, number][] = [
+    [90, -42], [120, -28], [165, -58], [205, -36], [245, -50], [285, -32], [320, -44],
+  ];
+  for (let tx = 60; tx < GAME_WIDTH; tx += 7) {
+    // Interpolate near ridge height at this x
+    let baseY = groundY;
+    for (let s = 0; s < nearRidgePoints.length - 1; s++) {
+      const [x0, h0] = nearRidgePoints[s];
+      const [x1, h1] = nearRidgePoints[s + 1];
+      if (tx >= x0 && tx <= x1) {
+        const t = (tx - x0) / (x1 - x0);
+        baseY = groundY + h0 + (h1 - h0) * t;
+        break;
+      }
+    }
+    if (baseY < groundY - 5) {
+      ctx.beginPath();
+      ctx.moveTo(tx - 3, baseY + 2);
+      ctx.lineTo(tx, baseY - 5);
+      ctx.lineTo(tx + 3, baseY + 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+}
+
+// ---- Desert Landscape ----
+
+function drawDesertLandscape(
+  ctx: CanvasRenderingContext2D,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  // Far mesa
+  ctx.fillStyle = 'rgba(80, 40, 15, 0.45)';
+  ctx.beginPath();
+  ctx.moveTo(100, groundY);
+  ctx.lineTo(112, groundY - 48);
+  ctx.lineTo(185, groundY - 48);
+  ctx.lineTo(197, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mesa striations
+  ctx.strokeStyle = 'rgba(120, 60, 25, 0.2)';
+  ctx.lineWidth = 1;
+  for (let sy = groundY - 44; sy < groundY; sy += 6) {
+    ctx.beginPath();
+    ctx.moveTo(114, sy);
+    ctx.lineTo(183, sy);
+    ctx.stroke();
+  }
+
+  // Near butte
+  ctx.fillStyle = 'rgba(90, 45, 18, 0.55)';
+  ctx.beginPath();
+  ctx.moveTo(220, groundY);
+  ctx.lineTo(236, groundY - 60);
+  ctx.lineTo(280, groundY - 60);
+  ctx.lineTo(296, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Small distant butte
+  ctx.fillStyle = 'rgba(60, 30, 12, 0.35)';
+  ctx.beginPath();
+  ctx.moveTo(65, groundY);
+  ctx.lineTo(76, groundY - 28);
+  ctx.lineTo(100, groundY - 28);
+  ctx.lineTo(111, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cactus silhouettes
+  ctx.strokeStyle = 'rgba(25, 55, 18, 0.5)';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+
+  if (155 > buildingEdgeX) {
+    // Saguaro 1
+    ctx.beginPath();
+    ctx.moveTo(155, groundY);
+    ctx.lineTo(155, groundY - 22);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(155, groundY - 14);
+    ctx.lineTo(149, groundY - 18);
+    ctx.lineTo(149, groundY - 24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(155, groundY - 11);
+    ctx.lineTo(161, groundY - 15);
+    ctx.lineTo(161, groundY - 20);
+    ctx.stroke();
+  }
+
+  // Saguaro 2
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(305, groundY);
+  ctx.lineTo(305, groundY - 16);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(305, groundY - 10);
+  ctx.lineTo(300, groundY - 14);
+  ctx.lineTo(300, groundY - 18);
+  ctx.stroke();
+
+  ctx.lineCap = 'butt';
+}
+
+// ---- Ocean ----
+
+function drawOceanscape(
+  ctx: CanvasRenderingContext2D,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  const horizonY = groundY - 22;
+
+  // Water area gradient
+  const waterGrad = ctx.createLinearGradient(0, horizonY, 0, groundY);
+  waterGrad.addColorStop(0, 'rgba(20, 60, 110, 0.4)');
+  waterGrad.addColorStop(1, 'rgba(10, 30, 60, 0.25)');
+  ctx.fillStyle = waterGrad;
+  ctx.fillRect(buildingEdgeX + 5, horizonY, GAME_WIDTH - buildingEdgeX - 5, groundY - horizonY);
+
+  // Horizon shimmer
+  ctx.fillStyle = 'rgba(150, 200, 240, 0.18)';
+  ctx.fillRect(buildingEdgeX + 10, horizonY, GAME_WIDTH - buildingEdgeX - 10, 2);
+
+  // Wave lines
+  ctx.lineWidth = 1;
+  for (let row = 0; row < 5; row++) {
+    const y = horizonY + 3 + row * 4;
+    const alpha = 0.25 - row * 0.03;
+    ctx.strokeStyle = `rgba(80, 160, 220, ${alpha})`;
+    ctx.beginPath();
+    for (let x = buildingEdgeX + 10; x < GAME_WIDTH; x += 2) {
+      const wave = Math.sin(x * 0.1 + row * 1.5) * 1.5;
+      if (x === buildingEdgeX + 10) ctx.moveTo(x, y + wave);
+      else ctx.lineTo(x, y + wave);
+    }
+    ctx.stroke();
+  }
+
+  // Distant sailboat
+  const boatX = 230;
+  const boatY = horizonY - 2;
+
+  ctx.fillStyle = 'rgba(30, 30, 50, 0.5)';
+  // Hull
+  ctx.beginPath();
+  ctx.moveTo(boatX - 8, boatY);
+  ctx.lineTo(boatX - 6, boatY + 3);
+  ctx.lineTo(boatX + 6, boatY + 3);
+  ctx.lineTo(boatX + 8, boatY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mast
+  ctx.strokeStyle = 'rgba(30, 30, 50, 0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(boatX, boatY);
+  ctx.lineTo(boatX, boatY - 12);
+  ctx.stroke();
+
+  // Sail
+  ctx.fillStyle = 'rgba(200, 200, 220, 0.25)';
+  ctx.beginPath();
+  ctx.moveTo(boatX, boatY - 12);
+  ctx.lineTo(boatX + 8, boatY - 4);
+  ctx.lineTo(boatX, boatY - 2);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawBuilding(

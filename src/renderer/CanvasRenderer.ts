@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { GAME_WIDTH, GAME_HEIGHT, PIXELS_PER_FOOT, CAMERA_CREW_OFFSET } from '../constants';
+import { GAME_WIDTH, GAME_HEIGHT, PIXELS_PER_FOOT, CAMERA_CREW_OFFSET, naturalLandingDistance, landingZoneHeight } from '../constants';
 import * as FallerRenderer from './FallerRenderer';
 import * as EnvironmentRenderer from './EnvironmentRenderer';
 import { getLayout, getSkyTopColor } from './EnvironmentRenderer';
@@ -99,10 +99,38 @@ export class CanvasRenderer {
       this.drawCrewText(ctx, state, layout.groundY);
     }
 
+    // Cat twist: near landing on airbag/boxes, visually rotate toward back-first
+    let drawAngle = interpAngle;
+    let drawTucked = f.isTucked;
+
+    if (f.phase === 'FALLING' && !f.verticalJump &&
+        state.level.targetType !== 'water') {
+      const centerFt = naturalLandingDistance(state.level.height);
+      const halfWidthFt = state.level.targetSize / PIXELS_PER_FOOT + 1.5;
+      const distFromCenter = Math.abs(interpX - centerFt);
+      const overCatcher = distFromCenter <= halfWidthFt;
+
+      if (overCatcher) {
+        const matHeightFt = landingZoneHeight(state.level.height, state.level.targetType) / PIXELS_PER_FOOT;
+        const heightAbove = interpY - matHeightFt;
+        const TWIST_HEIGHT = 5; // feet above catcher to start twisting
+        if (heightAbove > 0 && heightAbove < TWIST_HEIGHT) {
+          const progress = 1 - heightAbove / TWIST_HEIGHT;
+          const t = progress * progress; // ease-in (slow start, fast finish)
+          const norm = ((interpAngle % 360) + 360) % 360;
+          const target = norm <= 180 ? 90 : 270; // nearest horizontal (back-first)
+          const diff = target - norm;
+          drawAngle = interpAngle + diff * t;
+          // Extend body for the twist
+          if (progress > 0.3) drawTucked = false;
+        }
+      }
+    }
+
     // Draw faller (world space)
     FallerRenderer.draw(
-      ctx, screenX, fallerWorldY, interpAngle,
-      f.phase, f.isTucked, pivotAtFeet, state.elapsedTime,
+      ctx, screenX, fallerWorldY, drawAngle,
+      f.phase, drawTucked, pivotAtFeet, state.elapsedTime,
       state.level.level, state.jumpTimer, state.level.targetType,
     );
 

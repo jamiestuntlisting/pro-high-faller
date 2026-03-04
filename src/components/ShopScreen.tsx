@@ -20,6 +20,17 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'stemcell',  name: 'STEM CELL TREATMENT', cost: 3000, healthBonus: 0, healthMin: -10, healthMax: 120, description: 'Cutting edge. Results may vary... wildly.' },
 ];
 
+function getDepletedQuip(itemId: string): string {
+  switch (itemId) {
+    case 'ice': return "You've iced everything iceable";
+    case 'ibuprofen': return "Your liver filed a complaint";
+    case 'cortisone': return "Doc says no more. He means it.";
+    case 'chiro': return "Your spine filed a restraining order";
+    case 'pt': return "PT can't fix what you got, buddy";
+    default: return 'ALL GONE';
+  }
+}
+
 interface Props {
   careerHealth: number;
   careerEarnings: number;
@@ -138,9 +149,15 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
                 {/* Remaining uses indicator */}
                 <div style={styles.usesLabel}>
                   {remaining !== undefined ? (
-                    <span style={{ color: usedUp ? '#aa4444' : remaining <= 2 ? '#aaaa44' : '#666' }}>
-                      {usedUp ? 'USED UP' : `${remaining} left`}
-                    </span>
+                    usedUp ? (
+                      <span style={{ color: '#aa4444', fontSize: '6px' }}>
+                        {getDepletedQuip(item.id)}
+                      </span>
+                    ) : (
+                      <span style={{ color: remaining <= 2 ? '#aaaa44' : '#666' }}>
+                        {remaining} left
+                      </span>
+                    )
                   ) : (
                     <span style={{ color: '#666' }}>∞</span>
                   )}

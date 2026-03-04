@@ -282,7 +282,10 @@ export class GameLoop {
           } else if (angleDeviation <= 55) {
             angleLine = 'NOT FLAT!';
           } else {
-            angleLine = 'LANDED ON HIS HEAD!';
+            // Distinguish head-first (near 180°) from feet-first (near 0°/360°)
+            const norm = ((this.state.landing!.landingAngle % 360) + 360) % 360;
+            const nearUpsideDown = norm > 135 && norm < 225;
+            angleLine = nearUpsideDown ? 'LANDED ON HIS HEAD!' : 'FELL STRAIGHT DOWN!';
           }
         }
 

@@ -17,6 +17,7 @@ interface Costume {
   hat?: { color: string; style: HatStyle };
   skirt?: string;      // if present, draws a dress/skirt instead of pants
   mustache?: boolean;  // Chaplin-style mustache
+  straitjacket?: boolean; // arms bound, buckle straps
 }
 
 const COSTUMES: Costume[] = [
@@ -60,6 +61,8 @@ const COSTUMES: Costume[] = [
   { shirt: '#cc2222', shirtAccent: '#ffffff', sleeve: '#cc2222', pants: '#335588', boots: '#664422', hat: { color: '#cc2222', style: 'beanie' } },
   // 20: Gorilla suit — full dark brown fur costume
   { shirt: '#3a2a1a', shirtAccent: '#2a1a0a', sleeve: '#3a2a1a', pants: '#3a2a1a', boots: '#2a1a0a' },
+  // 21: Straitjacket — white institutional jacket, arms bound
+  { shirt: '#ccccbb', shirtAccent: '#999977', sleeve: '#ccccbb', pants: '#445544', boots: '#333333', straitjacket: true },
 ];
 
 function getCostume(level: number): Costume {
@@ -221,12 +224,16 @@ function drawUpright(
     const legSwing = Math.sin(fallTime * 5.5);
 
     // Arms (sleeve color)
-    ctx.strokeStyle = costume.sleeve;
-    ctx.beginPath();
-    ctx.moveTo(-8 + armSwing * 2, shoulderY - 5 + armSwing * 4);
-    ctx.lineTo(0, shoulderY);
-    ctx.lineTo(7 - armSwing * 2, shoulderY - 5 - armSwing * 4);
-    ctx.stroke();
+    if (costume.straitjacket) {
+      drawBoundArms(ctx, shoulderY, costume.sleeve, armSwing);
+    } else {
+      ctx.strokeStyle = costume.sleeve;
+      ctx.beginPath();
+      ctx.moveTo(-8 + armSwing * 2, shoulderY - 5 + armSwing * 4);
+      ctx.lineTo(0, shoulderY);
+      ctx.lineTo(7 - armSwing * 2, shoulderY - 5 - armSwing * 4);
+      ctx.stroke();
+    }
 
     if (costume.skirt) {
       // Skirt billowing in the fall
@@ -288,13 +295,17 @@ function drawUpright(
       ctx.stroke();
     }
   } else if (phase === 'JUMPING') {
-    // Arms spread
-    ctx.strokeStyle = costume.sleeve;
-    ctx.beginPath();
-    ctx.moveTo(-9, shoulderY - 8);
-    ctx.lineTo(0, shoulderY);
-    ctx.lineTo(7, shoulderY - 2);
-    ctx.stroke();
+    // Arms
+    if (costume.straitjacket) {
+      drawBoundArms(ctx, shoulderY, costume.sleeve);
+    } else {
+      ctx.strokeStyle = costume.sleeve;
+      ctx.beginPath();
+      ctx.moveTo(-9, shoulderY - 8);
+      ctx.lineTo(0, shoulderY);
+      ctx.lineTo(7, shoulderY - 2);
+      ctx.stroke();
+    }
 
     if (costume.skirt) {
       // Skirt flares out during jump
@@ -342,13 +353,17 @@ function drawUpright(
       ctx.stroke();
     }
   } else {
-    // Standing / leaning — arms down
-    ctx.strokeStyle = costume.sleeve;
-    ctx.beginPath();
-    ctx.moveTo(-6, hipY - 2);
-    ctx.lineTo(0, shoulderY);
-    ctx.lineTo(6, hipY - 2);
-    ctx.stroke();
+    // Standing / leaning — arms
+    if (costume.straitjacket) {
+      drawBoundArms(ctx, shoulderY, costume.sleeve);
+    } else {
+      ctx.strokeStyle = costume.sleeve;
+      ctx.beginPath();
+      ctx.moveTo(-6, hipY - 2);
+      ctx.lineTo(0, shoulderY);
+      ctx.lineTo(6, hipY - 2);
+      ctx.stroke();
+    }
 
     if (costume.skirt) {
       // Dress/skirt — triangle from hips
@@ -395,6 +410,43 @@ function drawUpright(
       ctx.lineTo(7, footY);
       ctx.stroke();
     }
+  }
+}
+
+// ========================================================
+//  STRAITJACKET ARMS — bound across chest with buckle straps
+// ========================================================
+
+function drawBoundArms(
+  ctx: CanvasRenderingContext2D,
+  shoulderY: number,
+  sleeve: string,
+  flutter?: number,
+): void {
+  ctx.strokeStyle = sleeve;
+  ctx.lineWidth = 2;
+  // Crossed arm wraps over chest
+  ctx.beginPath();
+  ctx.moveTo(-4, shoulderY + 1);
+  ctx.quadraticCurveTo(0, shoulderY + 4, 4, shoulderY + 1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-3, shoulderY + 4);
+  ctx.quadraticCurveTo(0, shoulderY + 7, 3, shoulderY + 4);
+  ctx.stroke();
+  // Buckle straps dangling from back
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = 0.8;
+  if (flutter !== undefined) {
+    ctx.beginPath();
+    ctx.moveTo(-2, shoulderY + 3);
+    ctx.lineTo(-7 + flutter * 2, shoulderY + 5 + flutter * 3);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(-2, shoulderY + 3);
+    ctx.lineTo(-6, shoulderY + 7);
+    ctx.stroke();
   }
 }
 
@@ -513,12 +565,13 @@ function drawHatShape(ctx: CanvasRenderingContext2D, style: HatStyle): void {
     ctx.fillRect(-1, -2.5, 2, 1.5);
     ctx.fillStyle = prevFill;
   } else if (style === 'wig') {
-    // Big fluffy wig — hair poof on top + sides
+    // Big fluffy wig — sits on head with long flowing hair
     ctx.beginPath();
-    ctx.arc(0, -1, 4.5, Math.PI, 0);
+    ctx.arc(0, 2, 5, Math.PI, 0); // poof sits on head
     ctx.fill();
-    ctx.fillRect(-4.5, -1, 2, 4);
-    ctx.fillRect(2.5, -1, 2, 4);
+    // Long hair flowing down both sides
+    ctx.fillRect(-5, 2, 2.5, 10);
+    ctx.fillRect(2.5, 2, 2.5, 10);
   }
 }
 
