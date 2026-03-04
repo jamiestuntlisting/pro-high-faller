@@ -1,8 +1,8 @@
 import type { GameState } from '../types';
-import { GAME_WIDTH, GAME_HEIGHT, RENDER, PIXELS_PER_FOOT, CAMERA_CREW_OFFSET } from '../constants';
+import { GAME_WIDTH, GAME_HEIGHT, PIXELS_PER_FOOT, CAMERA_CREW_OFFSET } from '../constants';
 import * as FallerRenderer from './FallerRenderer';
 import * as EnvironmentRenderer from './EnvironmentRenderer';
-import { getLayout } from './EnvironmentRenderer';
+import { getLayout, getSkyTopColor } from './EnvironmentRenderer';
 import { lerp, lerpAngle } from '../utils/math';
 
 interface WindParticle {
@@ -64,7 +64,7 @@ export class CanvasRenderer {
     }
 
     // Clear the entire canvas (screen space, before transform)
-    ctx.fillStyle = RENDER.SKY_COLOR;
+    ctx.fillStyle = getSkyTopColor(state.level.level);
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     // Apply camera transform: shift world so viewY appears at screen top

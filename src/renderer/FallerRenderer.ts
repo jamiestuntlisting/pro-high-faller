@@ -56,6 +56,10 @@ const COSTUMES: Costume[] = [
   { shirt: '#1a1a1a', shirtAccent: '#111111', sleeve: '#1a1a1a', pants: '#1a1a1a', boots: '#111111' },
   // 18: Purple + gold cape (fantasy)
   { shirt: '#663399', shirtAccent: '#442266', sleeve: '#663399', pants: '#442266', boots: '#333333', cape: '#9933cc' },
+  // 19: Where's Waldo — red/white striped shirt + jeans + red beanie
+  { shirt: '#cc2222', shirtAccent: '#ffffff', sleeve: '#cc2222', pants: '#335588', boots: '#664422', hat: { color: '#cc2222', style: 'beanie' } },
+  // 20: Gorilla suit — full dark brown fur costume
+  { shirt: '#3a2a1a', shirtAccent: '#2a1a0a', sleeve: '#3a2a1a', pants: '#3a2a1a', boots: '#2a1a0a' },
 ];
 
 function getCostume(level: number): Costume {
@@ -532,34 +536,119 @@ function drawTucked(
   const cx = 0;
   const cy = oy + bodyH / 2;
 
-  // Ball outline in shirt color
-  ctx.strokeStyle = costume.shirt;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Head poking out
-  ctx.fillStyle = '#ddbbaa';
-  ctx.beginPath();
-  ctx.arc(cx, cy - 6, headR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Knees (pants color)
-  ctx.fillStyle = costume.pants;
-  ctx.beginPath();
-  ctx.arc(cx - 3, cy + 3, 2, 0, Math.PI * 2);
-  ctx.arc(cx + 3, cy + 3, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cape trails behind when tucked (negative X = back toward building)
+  // Cape trails behind when tucked — draw first (behind body)
   if (costume.cape) {
     ctx.strokeStyle = costume.cape;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx - 5, cy);
-    ctx.lineTo(cx - 16, cy + 2);
+    ctx.moveTo(cx - 4, cy - 2);
+    ctx.quadraticCurveTo(cx - 12, cy, cx - 16, cy + 2);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 3, cy - 1);
+    ctx.quadraticCurveTo(cx - 10, cy + 1, cx - 14, cy + 4);
     ctx.stroke();
   }
+
+  // === CURVED BACK (shirt) — thick arc from shoulders to lower back ===
+  ctx.strokeStyle = costume.shirt;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, -Math.PI * 0.8, Math.PI * 0.15);
+  ctx.stroke();
+
+  // Shirt accent stripe on back
+  ctx.strokeStyle = costume.shirtAccent;
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, -Math.PI * 0.5, -Math.PI * 0.15);
+  ctx.stroke();
+
+  // === HEAD — tucked down, chin to chest ===
+  ctx.fillStyle = '#ddbbaa';
+  ctx.beginPath();
+  ctx.arc(cx + 3, cy - 5, headR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Face marker (eye) — looking down
+  ctx.fillStyle = '#222222';
+  ctx.beginPath();
+  ctx.arc(cx + 4.5, cy - 4.5, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mustache
+  if (costume.mustache) {
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(cx + 2, cy - 3.5, 2.5, 0.8);
+  }
+
+  // === ARMS (sleeves) — wrapped around knees ===
+  ctx.strokeStyle = costume.sleeve;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  // Left arm: from shoulder area, curling around front
+  ctx.moveTo(cx + 1, cy - 3);
+  ctx.quadraticCurveTo(cx + 6, cy - 1, cx + 5, cy + 2);
+  ctx.stroke();
+  ctx.beginPath();
+  // Right arm: from other shoulder, crossing over
+  ctx.moveTo(cx + 2, cy - 2);
+  ctx.quadraticCurveTo(cx + 7, cy + 1, cx + 4, cy + 4);
+  ctx.stroke();
+
+  // Hands (skin) gripping shins
+  ctx.fillStyle = '#ddbbaa';
+  ctx.beginPath();
+  ctx.arc(cx + 5, cy + 2, 1, 0, Math.PI * 2);
+  ctx.arc(cx + 4, cy + 4, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // === THIGHS (pants) — pulled up to chest ===
+  ctx.strokeStyle = costume.pants;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 1, cy + 3);
+  ctx.lineTo(cx + 3, cy + 1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 1, cy + 4);
+  ctx.lineTo(cx + 2, cy + 3);
+  ctx.stroke();
+
+  if (costume.skirt) {
+    // Skirt bunched around tucked legs
+    ctx.fillStyle = costume.skirt;
+    ctx.beginPath();
+    ctx.moveTo(cx - 1, cy + 1);
+    ctx.lineTo(cx + 4, cy + 1);
+    ctx.lineTo(cx + 3, cy + 5);
+    ctx.lineTo(cx - 2, cy + 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // === SHINS + BOOTS — folded under ===
+  ctx.strokeStyle = costume.pants;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx + 3, cy + 1);
+  ctx.lineTo(cx + 1, cy + 6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + 2, cy + 3);
+  ctx.lineTo(cx, cy + 7);
+  ctx.stroke();
+
+  // Boots
+  ctx.strokeStyle = costume.boots;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 1, cy + 6);
+  ctx.lineTo(cx + 1, cy + 6);
+  ctx.moveTo(cx - 2, cy + 7);
+  ctx.lineTo(cx, cy + 7);
+  ctx.stroke();
 }
 
 // ========================================================

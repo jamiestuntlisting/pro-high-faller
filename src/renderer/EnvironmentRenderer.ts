@@ -4,6 +4,49 @@ import { GAME_WIDTH, GAME_HEIGHT, RENDER, PIXELS_PER_FOOT, naturalLandingDistanc
 /** Building width in pixels — left side of screen */
 export const BUILDING_WIDTH_PX = 55;
 
+// ========================================================
+//  BACKGROUND THEMES — subtle sky gradients + silhouettes
+// ========================================================
+
+interface BgTheme {
+  skyTop: string;       // color at top of sky
+  skyBottom: string;    // color near horizon
+  groundColor: string;  // ground tint
+  silhouette?: 'city' | 'mountains' | 'desert' | 'ocean';
+}
+
+const THEMES: Record<string, BgTheme> = {
+  nightCity:   { skyTop: '#060612', skyBottom: '#0e1428', groundColor: '#0c0c10', silhouette: 'city' },
+  sunset:      { skyTop: '#1a0a1e', skyBottom: '#2a1008', groundColor: '#140c08', silhouette: 'city' },
+  overcast:    { skyTop: '#0c0e12', skyBottom: '#141618', groundColor: '#0e0e0e' },
+  dusk:        { skyTop: '#08061a', skyBottom: '#121028', groundColor: '#0a0a12', silhouette: 'city' },
+  mountains:   { skyTop: '#060a14', skyBottom: '#0c1420', groundColor: '#0a0e0a', silhouette: 'mountains' },
+  desert:      { skyTop: '#1a1008', skyBottom: '#1e1408', groundColor: '#14100a', silhouette: 'desert' },
+  ocean:       { skyTop: '#06101a', skyBottom: '#081420', groundColor: '#080e14', silhouette: 'ocean' },
+  dawn:        { skyTop: '#120818', skyBottom: '#1a0c14', groundColor: '#100a0e' },
+};
+
+// Map levels to themes by production name feel
+const LEVEL_THEMES: Record<number, string> = {
+  1: 'nightCity', 2: 'overcast', 3: 'sunset', 4: 'nightCity', 5: 'dusk',
+  6: 'overcast', 7: 'dusk', 8: 'nightCity', 9: 'nightCity', 10: 'sunset',
+  11: 'dusk', 12: 'ocean', 13: 'overcast', 14: 'sunset', 15: 'mountains',
+  16: 'mountains', 17: 'desert', 18: 'dusk', 19: 'desert', 20: 'sunset',
+  21: 'dawn', 22: 'overcast', 23: 'mountains', 24: 'dawn', 25: 'nightCity',
+  26: 'ocean', 27: 'sunset', 28: 'dusk', 29: 'ocean', 30: 'nightCity',
+  31: 'overcast', 32: 'ocean', 33: 'dawn', 34: 'dusk', 35: 'mountains',
+  36: 'sunset', 37: 'nightCity', 38: 'ocean', 39: 'dawn', 40: 'desert',
+};
+
+export function getTheme(level: number): BgTheme {
+  const key = LEVEL_THEMES[level] || 'nightCity';
+  return THEMES[key] || THEMES.nightCity;
+}
+
+export function getSkyTopColor(level: number): string {
+  return getTheme(level).skyTop;
+}
+
 export interface SceneLayout {
   buildingTopY: number;
   buildingEdgeX: number;
@@ -44,13 +87,24 @@ export function draw(
   landedInfo?: LandedInfo | null,
 ): void {
   const { groundY, buildingTopY, buildingEdgeX } = layout;
+  const theme = getTheme(level.level);
 
-  // === SKY === (extends above building top for camera scrolling)
-  ctx.fillStyle = RENDER.SKY_COLOR;
-  ctx.fillRect(0, buildingTopY - GAME_HEIGHT, GAME_WIDTH, groundY - buildingTopY + GAME_HEIGHT);
+  // === SKY with gradient === (extends above building top for camera scrolling)
+  const skyTop = buildingTopY - GAME_HEIGHT;
+  const skyH = groundY - skyTop;
+  const grad = ctx.createLinearGradient(0, skyTop, 0, groundY);
+  grad.addColorStop(0, theme.skyTop);
+  grad.addColorStop(1, theme.skyBottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, skyTop, GAME_WIDTH, skyH);
+
+  // === DISTANT SILHOUETTES (behind building, very subtle) ===
+  if (theme.silhouette) {
+    drawSilhouette(ctx, theme.silhouette, groundY, buildingEdgeX);
+  }
 
   // === GROUND ===
-  ctx.fillStyle = RENDER.GROUND_COLOR;
+  ctx.fillStyle = theme.groundColor;
   ctx.fillRect(0, groundY, GAME_WIDTH, GAME_HEIGHT);
 
   // Ground line as dashes
@@ -74,6 +128,120 @@ export function draw(
 
   // === LANDING ZONE ===
   drawLandingZone(ctx, level, layout, landedInfo ?? null);
+}
+
+// ========================================================
+//  DISTANT SILHOUETTES — very dim shapes behind everything
+// ========================================================
+
+function drawSilhouette(
+  ctx: CanvasRenderingContext2D,
+  type: string,
+  groundY: number,
+  buildingEdgeX: number,
+): void {
+  ctx.save();
+
+  if (type === 'city') {
+    // Distant city skyline — very dim blocks behind the action area
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    const buildings = [
+      { x: 80, w: 12, h: 35 }, { x: 100, w: 8, h: 22 }, { x: 115, w: 14, h: 45 },
+      { x: 140, w: 10, h: 28 }, { x: 160, w: 16, h: 52 }, { x: 185, w: 10, h: 30 },
+      { x: 200, w: 12, h: 38 }, { x: 220, w: 8, h: 20 }, { x: 240, w: 14, h: 42 },
+      { x: 260, w: 10, h: 26 }, { x: 280, w: 12, h: 34 }, { x: 300, w: 8, h: 18 },
+    ];
+    for (const b of buildings) {
+      if (b.x > buildingEdgeX) {
+        ctx.fillRect(b.x, groundY - b.h, b.w, b.h);
+      }
+    }
+    // Slightly brighter windows on a couple buildings
+    ctx.fillStyle = 'rgba(255,255,200,0.03)';
+    ctx.fillRect(163, groundY - 48, 3, 2);
+    ctx.fillRect(167, groundY - 42, 3, 2);
+    ctx.fillRect(118, groundY - 38, 3, 2);
+    ctx.fillRect(243, groundY - 36, 3, 2);
+
+  } else if (type === 'mountains') {
+    // Distant mountain range — subtle triangular shapes
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.beginPath();
+    ctx.moveTo(60, groundY);
+    ctx.lineTo(110, groundY - 55);
+    ctx.lineTo(160, groundY);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.beginPath();
+    ctx.moveTo(120, groundY);
+    ctx.lineTo(190, groundY - 70);
+    ctx.lineTo(260, groundY);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.beginPath();
+    ctx.moveTo(200, groundY);
+    ctx.lineTo(250, groundY - 45);
+    ctx.lineTo(320, groundY);
+    ctx.fill();
+
+    // Snow caps
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath();
+    ctx.moveTo(105, groundY - 50);
+    ctx.lineTo(110, groundY - 55);
+    ctx.lineTo(115, groundY - 50);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(183, groundY - 64);
+    ctx.lineTo(190, groundY - 70);
+    ctx.lineTo(197, groundY - 64);
+    ctx.fill();
+
+  } else if (type === 'desert') {
+    // Distant mesa / butte silhouettes
+    ctx.fillStyle = 'rgba(255,200,150,0.03)';
+    // Large mesa
+    ctx.beginPath();
+    ctx.moveTo(130, groundY);
+    ctx.lineTo(140, groundY - 30);
+    ctx.lineTo(200, groundY - 30);
+    ctx.lineTo(210, groundY);
+    ctx.fill();
+    // Small butte
+    ctx.beginPath();
+    ctx.moveTo(240, groundY);
+    ctx.lineTo(252, groundY - 22);
+    ctx.lineTo(268, groundY - 22);
+    ctx.lineTo(280, groundY);
+    ctx.fill();
+    // Distant butte
+    ctx.fillStyle = 'rgba(255,200,150,0.02)';
+    ctx.beginPath();
+    ctx.moveTo(85, groundY);
+    ctx.lineTo(95, groundY - 18);
+    ctx.lineTo(115, groundY - 18);
+    ctx.lineTo(125, groundY);
+    ctx.fill();
+
+  } else if (type === 'ocean') {
+    // Gentle wave horizon line
+    ctx.strokeStyle = 'rgba(100,160,200,0.04)';
+    ctx.lineWidth = 1;
+    for (let row = 0; row < 3; row++) {
+      const y = groundY - 8 - row * 6;
+      ctx.beginPath();
+      for (let x = buildingEdgeX + 10; x < GAME_WIDTH; x += 2) {
+        const wave = Math.sin(x * 0.08 + row * 2) * 2;
+        if (x === buildingEdgeX + 10) ctx.moveTo(x, y + wave);
+        else ctx.lineTo(x, y + wave);
+      }
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
 }
 
 function drawBuilding(
