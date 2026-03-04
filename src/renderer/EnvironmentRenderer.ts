@@ -30,9 +30,10 @@ const THEMES: Record<string, BgTheme> = {
     groundColor: '#1a0e06',
     silhouette: 'city',
   },
-  overcast: {
-    skyStops: [[0, '#1e2228'], [0.5, '#2e343c'], [1, '#3a4048']],
-    groundColor: '#161a1e',
+  stormyCity: {
+    skyStops: [[0, '#0a0e14'], [0.3, '#161e28'], [0.6, '#222e3a'], [0.85, '#2a3844'], [1, '#344050']],
+    groundColor: '#0e1218',
+    silhouette: 'city',
     clouds: true,
   },
   dusk: {
@@ -46,10 +47,21 @@ const THEMES: Record<string, BgTheme> = {
     groundColor: '#141e14',
     silhouette: 'mountains',
   },
+  wildWest: {
+    skyStops: [[0, '#200808'], [0.2, '#552010'], [0.4, '#aa3818'], [0.6, '#dd6611'], [0.8, '#eeaa22'], [1, '#ffcc44']],
+    groundColor: '#1a0e06',
+    silhouette: 'desert',
+  },
   desert: {
     skyStops: [[0, '#402800'], [0.3, '#886030'], [0.6, '#bb8833'], [1, '#ddaa44']],
     groundColor: '#221808',
     silhouette: 'desert',
+  },
+  tropical: {
+    skyStops: [[0, '#0a1e44'], [0.3, '#441855'], [0.5, '#aa3355'], [0.7, '#dd7744'], [1, '#ffcc88']],
+    groundColor: '#081622',
+    silhouette: 'ocean',
+    clouds: true,
   },
   ocean: {
     skyStops: [[0, '#0a1e44'], [0.4, '#1a4477'], [0.7, '#2a77aa'], [1, '#44aacc']],
@@ -62,20 +74,34 @@ const THEMES: Record<string, BgTheme> = {
   },
 };
 
-// Map levels to themes by production name feel
-const LEVEL_THEMES: Record<number, string> = {
-  1: 'nightCity', 2: 'overcast', 3: 'sunset', 4: 'nightCity', 5: 'dusk',
-  6: 'overcast', 7: 'dusk', 8: 'nightCity', 9: 'nightCity', 10: 'sunset',
-  11: 'dusk', 12: 'ocean', 13: 'overcast', 14: 'sunset', 15: 'mountains',
-  16: 'mountains', 17: 'desert', 18: 'dusk', 19: 'desert', 20: 'sunset',
-  21: 'dawn', 22: 'overcast', 23: 'mountains', 24: 'dawn', 25: 'nightCity',
-  26: 'ocean', 27: 'sunset', 28: 'dusk', 29: 'ocean', 30: 'nightCity',
-  31: 'overcast', 32: 'ocean', 33: 'dawn', 34: 'dusk', 35: 'mountains',
-  36: 'sunset', 37: 'nightCity', 38: 'ocean', 39: 'dawn', 40: 'desert',
-};
+// Theme matched to costume — costumes cycle every 21 levels via (level-1) % 21
+const COSTUME_THEMES: string[] = [
+  'nightCity',   // 0: Red Plaid Flannel — Hollywood night shoot
+  'stormyCity',  // 1: Denim Jacket — stormy urban set
+  'nightCity',   // 2: Police — cop show night shoot
+  'sunset',      // 3: Bruce Lee — dramatic martial arts action
+  'dawn',        // 4: Red Tracksuit — sunrise training montage
+  'wildWest',    // 5: Cowboy — epic western sunset
+  'stormyCity',  // 6: Chaplin — moody silent film city
+  'nightCity',   // 7: Disco — nightclub scene
+  'sunset',      // 8: Woman in Dress — romantic dramatic backdrop
+  'dusk',        // 9: Superhero — epic twilight sky
+  'tropical',    // 10: Hawaiian — warm ocean sunset
+  'mountains',   // 11: Green Jacket — outdoors, wilderness
+  'dusk',        // 12: Black Tee — casual evening
+  'desert',      // 13: Orange Jumpsuit — prison in the desert
+  'mountains',   // 14: Leather Cowboy — rugged mountain west
+  'stormyCity',  // 15: Hi-Vis — construction site, stormy day
+  'nightCity',   // 16: Spy — espionage under cover of night
+  'dusk',        // 17: Fantasy Wizard — mystical twilight
+  'stormyCity',  // 18: Waldo — busy urban scene
+  'mountains',   // 19: Gorilla — wilderness
+  'nightCity',   // 20: Straitjacket — dark institutional night
+];
 
 export function getTheme(level: number): BgTheme {
-  const key = LEVEL_THEMES[level] || 'nightCity';
+  const costumeIdx = (level - 1) % COSTUME_THEMES.length;
+  const key = COSTUME_THEMES[costumeIdx];
   return THEMES[key] || THEMES.nightCity;
 }
 
@@ -683,76 +709,77 @@ function drawHelicopter(
   edgeX: number,
   topY: number,
 ): void {
-  // Helicopter centered above where the performer stands
+  // Helicopter centered above where the performer stands — 3x scale
   const cx = edgeX - 10;
-  const cy = topY - 10;
+  const cy = topY - 20;
+  const s = 3; // scale factor
 
   ctx.save();
   ctx.lineCap = 'round';
 
   // Main rotor — spinning line
   ctx.strokeStyle = '#777777';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   const time = Date.now() / 80;
-  const rotorLen = 30;
+  const rotorLen = 30 * s;
   ctx.beginPath();
-  ctx.moveTo(cx - rotorLen * Math.cos(time), cy - 18);
-  ctx.lineTo(cx + rotorLen * Math.cos(time), cy - 18);
+  ctx.moveTo(cx - rotorLen * Math.cos(time), cy - 18 * s);
+  ctx.lineTo(cx + rotorLen * Math.cos(time), cy - 18 * s);
   ctx.stroke();
 
   // Rotor mast
   ctx.strokeStyle = '#666666';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(cx, cy - 18);
-  ctx.lineTo(cx, cy - 10);
+  ctx.moveTo(cx, cy - 18 * s);
+  ctx.lineTo(cx, cy - 10 * s);
   ctx.stroke();
 
   // Body — rounded rectangle shape
   ctx.fillStyle = '#444444';
   ctx.beginPath();
-  ctx.ellipse(cx, cy - 5, 18, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - 5 * s, 18 * s, 8 * s, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Cockpit windshield
   ctx.fillStyle = '#556677';
   ctx.beginPath();
-  ctx.ellipse(cx + 10, cy - 6, 6, 5, 0.2, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.ellipse(cx + 10 * s, cy - 6 * s, 6 * s, 5 * s, 0.2, -Math.PI * 0.5, Math.PI * 0.5);
   ctx.fill();
 
   // Tail boom
   ctx.strokeStyle = '#444444';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.moveTo(cx - 16, cy - 5);
-  ctx.lineTo(cx - 35, cy - 12);
+  ctx.moveTo(cx - 16 * s, cy - 5 * s);
+  ctx.lineTo(cx - 35 * s, cy - 12 * s);
   ctx.stroke();
 
   // Tail rotor
   ctx.strokeStyle = '#666666';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx - 35, cy - 18);
-  ctx.lineTo(cx - 35, cy - 6);
+  ctx.moveTo(cx - 35 * s, cy - 18 * s);
+  ctx.lineTo(cx - 35 * s, cy - 6 * s);
   ctx.stroke();
 
   // Skids
   ctx.strokeStyle = '#555555';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   // Left skid strut
   ctx.beginPath();
-  ctx.moveTo(cx - 8, cy + 2);
-  ctx.lineTo(cx - 10, cy + 8);
+  ctx.moveTo(cx - 8 * s, cy + 2 * s);
+  ctx.lineTo(cx - 10 * s, cy + 8 * s);
   ctx.stroke();
   // Right skid strut
   ctx.beginPath();
-  ctx.moveTo(cx + 8, cy + 2);
-  ctx.lineTo(cx + 6, cy + 8);
+  ctx.moveTo(cx + 8 * s, cy + 2 * s);
+  ctx.lineTo(cx + 6 * s, cy + 8 * s);
   ctx.stroke();
   // Skid bars
   ctx.beginPath();
-  ctx.moveTo(cx - 16, cy + 8);
-  ctx.lineTo(cx + 12, cy + 8);
+  ctx.moveTo(cx - 16 * s, cy + 8 * s);
+  ctx.lineTo(cx + 12 * s, cy + 8 * s);
   ctx.stroke();
 
   ctx.restore();
@@ -765,14 +792,15 @@ function drawBalloon(
 ): void {
   const cx = edgeX - 5;
   const basketY = topY + 2;
+  const s = 3; // scale factor
 
   ctx.save();
   ctx.lineCap = 'round';
 
-  // Envelope (the big balloon part)
-  const envCY = basketY - 40;
-  const envRX = 22;
-  const envRY = 28;
+  // Envelope (the big balloon part) — 3x scale
+  const envCY = basketY - 40 * s;
+  const envRX = 22 * s;
+  const envRY = 28 * s;
 
   // Envelope body — gradient stripes
   const stripeColors = ['#cc3333', '#cc8833', '#cccc33', '#cc3333', '#cc8833'];
@@ -780,8 +808,7 @@ function drawBalloon(
   for (let i = 0; i < stripeColors.length; i++) {
     ctx.fillStyle = stripeColors[i];
     const sx = cx - envRX + i * stripeWidth;
-    ctx.beginPath();
-    // clip to ellipse by drawing arcs
+    // clip to ellipse by drawing horizontal lines
     for (let py = envCY - envRY; py <= envCY + envRY; py += 1) {
       const dy = py - envCY;
       const halfW = envRX * Math.sqrt(1 - (dy * dy) / (envRY * envRY));
@@ -797,39 +824,41 @@ function drawBalloon(
 
   // Envelope outline
   ctx.strokeStyle = '#884422';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.ellipse(cx, envCY, envRX, envRY, 0, 0, Math.PI * 2);
   ctx.stroke();
 
   // Ropes from envelope to basket
   ctx.strokeStyle = '#886644';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cx - 10, envCY + envRY - 2);
-  ctx.lineTo(cx - 6, basketY);
-  ctx.moveTo(cx + 10, envCY + envRY - 2);
-  ctx.lineTo(cx + 6, basketY);
-  ctx.stroke();
-
-  // Basket
-  ctx.fillStyle = '#664422';
-  ctx.fillRect(cx - 8, basketY, 16, 10);
-  // Basket rim
-  ctx.strokeStyle = '#886644';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(cx - 9, basketY);
-  ctx.lineTo(cx + 9, basketY);
+  ctx.moveTo(cx - 10 * s, envCY + envRY - 2);
+  ctx.lineTo(cx - 6 * s, basketY);
+  ctx.moveTo(cx + 10 * s, envCY + envRY - 2);
+  ctx.lineTo(cx + 6 * s, basketY);
+  ctx.stroke();
+
+  // Basket — scaled
+  const bw = 8 * s;
+  const bh = 10 * s;
+  ctx.fillStyle = '#664422';
+  ctx.fillRect(cx - bw, basketY, bw * 2, bh);
+  // Basket rim
+  ctx.strokeStyle = '#886644';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - bw - 1, basketY);
+  ctx.lineTo(cx + bw + 1, basketY);
   ctx.stroke();
   // Basket weave pattern
   ctx.strokeStyle = '#553311';
-  ctx.lineWidth = 0.5;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cx - 8, basketY + 4);
-  ctx.lineTo(cx + 8, basketY + 4);
-  ctx.moveTo(cx - 8, basketY + 7);
-  ctx.lineTo(cx + 8, basketY + 7);
+  ctx.moveTo(cx - bw, basketY + bh * 0.35);
+  ctx.lineTo(cx + bw, basketY + bh * 0.35);
+  ctx.moveTo(cx - bw, basketY + bh * 0.65);
+  ctx.lineTo(cx + bw, basketY + bh * 0.65);
   ctx.stroke();
 
   ctx.restore();
@@ -853,6 +882,29 @@ function drawLandingZone(
   const matHeight = landingZoneHeight(level.height, level.targetType);
 
   if (level.targetType === 'water') {
+    const matTop = groundY - matHeight;
+
+    // Tank structure — solid opaque background + walls + window
+    ctx.fillStyle = '#0a1828';
+    ctx.fillRect(left, matTop, right - left, matHeight);
+
+    // Side walls
+    ctx.fillStyle = '#556677';
+    ctx.fillRect(left, matTop, 3, matHeight);
+    ctx.fillRect(right - 3, matTop, 3, matHeight);
+
+    // Top rim
+    ctx.fillStyle = '#667788';
+    ctx.fillRect(left, matTop, right - left, 2);
+
+    // Viewing window on right wall
+    const winY = matTop + matHeight * 0.25;
+    const winH = matHeight * 0.4;
+    ctx.fillStyle = '#1a3855';
+    ctx.fillRect(right - 3, winY, 3, winH);
+    ctx.fillStyle = '#88aacc';
+    ctx.fillRect(right - 1, winY, 1, winH);
+
     // Rows of waves scaling with depth
     const rows = Math.max(2, Math.floor(matHeight / 7));
     for (let r = 0; r < rows; r++) {
@@ -860,7 +912,7 @@ function drawLandingZone(
       ctx.fillStyle = shade;
       const offset = (r % 2) * 3;
       const rowY = groundY - r * 7;
-      for (let wx = left + offset; wx < right; wx += 6) {
+      for (let wx = left + offset + 3; wx < right - 3; wx += 6) {
         ctx.fillText('~', wx, rowY);
       }
     }

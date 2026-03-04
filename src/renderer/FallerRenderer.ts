@@ -936,8 +936,9 @@ function drawLanded(
   }
 
   // Hat/wig — falls from the sky and settles on the ground
+  // Start position matches the fly-off trajectory (rightward + upward)
   if (costume.hat) {
-    const settleTime = 1.8; // seconds for hat to drift down and settle
+    const settleTime = 2.5; // seconds for hat to drift down and settle
     const restX = 10;
     const restY = -14;
     const restRot = 0.4;
@@ -946,10 +947,10 @@ function drawLanded(
     if (landedTime < settleTime) {
       const t = landedTime / settleTime;
       const ease = 1 - (1 - t) * (1 - t); // ease-out quad
-      // Start from high up and off to the side, settle to rest position
-      hatX = restX + (1 - ease) * 8;
-      hatY = restY - (1 - ease) * 40;
-      hatRot = restRot + (1 - ease) * 4; // spinning, settles to slight tilt
+      // Start far right and high up (matching fly-off direction), descend to rest
+      hatX = restX + (1 - ease) * 20;
+      hatY = restY - (1 - ease) * 60;
+      hatRot = restRot + (1 - ease) * 6;
     } else {
       hatX = restX;
       hatY = restY;

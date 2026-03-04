@@ -12,11 +12,12 @@ export interface ShopItem {
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'ice',       name: 'ICE PACK',         cost: 50,   healthBonus: 10, maxUses: 10, description: 'Bag of ice. Old school.' },
-  { id: 'ibuprofen', name: 'IBUPROFEN',        cost: 100,  healthBonus: 20, maxUses: 8,  description: 'Take two and call me in the morning.' },
-  { id: 'cortisone', name: 'CORTISONE SHOT',   cost: 300,  healthBonus: 40, maxUses: 5,  description: "The doc says it's fine. Probably." },
-  { id: 'chiro',     name: 'CHIROPRACTOR',     cost: 500,  healthBonus: 30, maxUses: 4,  description: 'That crack was satisfying.' },
-  { id: 'pt',        name: 'PHYSICAL THERAPY',  cost: 800,  healthBonus: 60, maxUses: 3,  description: 'Doing it the right way.' },
+  // Each tier is 20%+ better HP/$ than the previous — saving up pays off
+  { id: 'ice',       name: 'ICE PACK',         cost: 60,   healthBonus: 10, maxUses: 10, description: 'Bag of ice. Old school.' },           // 0.167 HP/$
+  { id: 'ibuprofen', name: 'IBUPROFEN',        cost: 100,  healthBonus: 20, maxUses: 8,  description: 'Take two and call me in the morning.' }, // 0.200 HP/$ (+20%)
+  { id: 'cortisone', name: 'CORTISONE SHOT',   cost: 200,  healthBonus: 50, maxUses: 5,  description: "The doc says it's fine. Probably." },  // 0.250 HP/$ (+25%)
+  { id: 'chiro',     name: 'CHIROPRACTOR',     cost: 350,  healthBonus: 110, maxUses: 4, description: 'That crack was satisfying.' },         // 0.314 HP/$ (+26%)
+  { id: 'pt',        name: 'PHYSICAL THERAPY',  cost: 500,  healthBonus: 200, maxUses: 3, description: 'Doing it the right way.' },            // 0.400 HP/$ (+27%)
   { id: 'stemcell',  name: 'STEM CELL TREATMENT', cost: 3000, healthBonus: 0, healthMin: -10, healthMax: 120, description: 'Cutting edge. Results may vary... wildly.' },
 ];
 
