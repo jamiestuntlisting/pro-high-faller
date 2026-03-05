@@ -80,6 +80,7 @@ export interface GameState {
   crewText: string | null;
   crewCallout: string | null;
   backFall: boolean;         // 20% chance: performer faces backwards, falls face-up
+  bouncy: boolean;           // sumo costume: bounces off ground on miss
   // Landing animation
   landedTime: number;       // Seconds since landing (for splash/settle animation)
   // Previous frame (for interpolation)

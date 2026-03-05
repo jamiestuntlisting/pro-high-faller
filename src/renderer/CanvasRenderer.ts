@@ -81,7 +81,7 @@ export class CanvasRenderer {
 
     // Wind particles (world space, before faller so they appear behind)
     if (state.level.wind !== 0) {
-      this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY);
+      this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY, state.level.level);
     }
 
     // Camera crew on far side of landing zone (world space) — single camera
@@ -276,11 +276,12 @@ export class CanvasRenderer {
     wind: number,
     groundY: number,
     viewY: number,
+    level: number,
   ): void {
     // Lazy init particles
     if (!this.windParticles) {
       this.windParticles = [];
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 30; i++) {
         this.windParticles.push({
           x: Math.random() * GAME_WIDTH,
           y: viewY + Math.random() * GAME_HEIGHT,
@@ -294,7 +295,15 @@ export class CanvasRenderer {
     const viewTop = viewY;
     const viewBottom = viewY + GAME_HEIGHT;
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    // Wind appearance — streaks that contrast with background
+    // Bright against dark themes, carries debris for story flavor
+    const theme = EnvironmentRenderer.getTheme(level);
+    const skyBrightness = theme.skyStops[0][1]; // top sky color
+    // If sky is dark (typical), use bright wind; if light, use dark wind
+    const isDark = skyBrightness.startsWith('#0') || skyBrightness.startsWith('#1') || skyBrightness.startsWith('#2');
+    const windColor = isDark ? 'rgba(200, 220, 255, 0.3)' : 'rgba(40, 30, 20, 0.25)';
+    const streakLen = Math.min(Math.abs(wind) * 1.5, 12);
+
     for (const p of particles) {
       // Move horizontally by wind
       p.x += speed * 0.3;
@@ -303,19 +312,23 @@ export class CanvasRenderer {
       p.y += Math.sin(p.phase) * 0.3;
 
       // Wrap horizontally
-      if (speed > 0 && p.x > GAME_WIDTH) {
-        p.x = -2;
+      if (speed > 0 && p.x > GAME_WIDTH + 5) {
+        p.x = -streakLen;
         p.y = viewTop + Math.random() * (viewBottom - viewTop);
-      } else if (speed < 0 && p.x < -2) {
-        p.x = GAME_WIDTH + 2;
+      } else if (speed < 0 && p.x < -streakLen) {
+        p.x = GAME_WIDTH + 5;
         p.y = viewTop + Math.random() * (viewBottom - viewTop);
       }
 
       // Only draw if in view and above ground
       if (p.y >= viewTop && p.y <= groundY) {
+        // Draw as directional streaks, not dots
+        ctx.strokeStyle = windColor;
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + (speed > 0 ? streakLen : -streakLen), p.y + Math.sin(p.phase) * 1.5);
+        ctx.stroke();
       }
     }
   }

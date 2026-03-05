@@ -122,8 +122,8 @@ export function LandingResult({
 }
 
 function formatFlips(totalRotation: number): string {
-  const flipDegrees = Math.abs(totalRotation) - 90; // subtract the lean
-  if (flipDegrees < 45) return '';
+  const flipDegrees = Math.abs(totalRotation);
+  if (flipDegrees < 135) return ''; // less than half a flip
   const quarters = Math.round(flipDegrees / 90);
   const fullFlips = Math.floor(quarters / 4);
   const remainder = quarters % 4;

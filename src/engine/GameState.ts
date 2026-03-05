@@ -1,5 +1,6 @@
 import type { GameState, LevelConfig, CountdownStep, CountdownState } from '../types';
 import { GAME_HEIGHT, RENDER, PIXELS_PER_FOOT } from '../constants';
+import { isCostumeBouncyForLevel } from '../renderer/FallerRenderer';
 
 function generateCountdown(): CountdownState {
   type Step = { text: string; baseDur: number };
@@ -193,6 +194,7 @@ export function createGameState(level: LevelConfig): GameState {
     crewText: null,
     crewCallout: null,
     backFall: Math.random() < 0.2,
+    bouncy: isCostumeBouncyForLevel(level.level),
     landedTime: 0,
     prevX: 0,
     prevY: level.height,

@@ -18,6 +18,10 @@ interface Costume {
   skirt?: string;      // if present, draws a dress/skirt instead of pants
   mustache?: boolean;  // Chaplin-style mustache
   straitjacket?: boolean; // arms bound, buckle straps
+  belt?: string;       // sumo belt (mawashi) — flies off during jump
+  bunnyEars?: boolean; // Easter bunny ears — flap like cape in fall
+  dropsEggs?: boolean; // drops colored eggs during fall
+  bouncy?: boolean;    // bounces on miss (sumo)
 }
 
 const COSTUMES: Costume[] = [
@@ -63,10 +67,19 @@ const COSTUMES: Costume[] = [
   { shirt: '#3a2a1a', shirtAccent: '#2a1a0a', sleeve: '#3a2a1a', pants: '#3a2a1a', boots: '#2a1a0a' },
   // 21: Straitjacket — white institutional jacket, arms bound
   { shirt: '#ccccbb', shirtAccent: '#999977', sleeve: '#ccccbb', pants: '#445544', boots: '#333333', straitjacket: true },
+  // 22: Sumo Wrestler — big suit, mawashi belt flies off, bounces on miss
+  { shirt: '#ddbb88', shirtAccent: '#ccaa66', sleeve: '#ddbb88', pants: '#ddbb88', boots: '#222222', belt: '#1a1a66', bouncy: true },
+  // 23: Easter Bunny — full white costume, floppy ears, drops eggs
+  { shirt: '#ffffff', shirtAccent: '#ffccdd', sleeve: '#ffffff', pants: '#ffffff', boots: '#ffaacc', bunnyEars: true, dropsEggs: true },
 ];
 
 function getCostume(level: number): Costume {
   return COSTUMES[(level - 1) % COSTUMES.length];
+}
+
+/** Check if the costume for a given level has bouncy property */
+export function isCostumeBouncyForLevel(level: number): boolean {
+  return getCostume(level).bouncy === true;
 }
 
 // ========================================================
@@ -117,11 +130,13 @@ export function draw(
 
     // Draw body in rotated space
     ctx.save();
-    // Back fall: mirror sprite when standing/leaning so performer faces backwards
-    if (backFall && (phase === 'STANDING' || phase === 'LEANING')) {
+    // Back fall: mirror sprite so performer faces backwards
+    if (backFall) {
       ctx.scale(-1, 1);
     }
-    ctx.rotate((angle * Math.PI) / 180);
+    // Negate angle during LEANING with backFall so lean goes toward edge, not building
+    const rotAngle = (backFall && phase === 'LEANING') ? -angle : angle;
+    ctx.rotate((rotAngle * Math.PI) / 180);
 
     if (isTucked && phase === 'FALLING') {
       drawTucked(ctx, oy, headR, bodyH, costume);
@@ -139,18 +154,19 @@ export function draw(
     // Hat flying off (JUMPING/FALLING) — drawn in world space so it doesn't orbit
     if (costume.hat && (phase === 'JUMPING' || phase === 'FALLING')) {
       const timeSinceJump = jumpTimer + fallTime;
-      if (timeSinceJump <= 2.0) {
+      if (timeSinceJump <= 2.5) {
         // Calculate head-top position in world space (rotated from body-local)
         const headTopLocal = oy - 2; // top of head in body-local Y
         const rad = (angle * Math.PI) / 180;
         const headWorldX = -Math.sin(rad) * headTopLocal;
         const headWorldY = Math.cos(rad) * headTopLocal;
 
-        // Drift away in world space (to the right and upward)
+        // Drift away from head — direction matches performer's facing
         const drift = timeSinceJump;
-        const driftX = drift * 10;
+        const hatDir = backFall ? -1 : 1;
+        const driftX = drift * 10 * hatDir;
         const driftY = -drift * 18;
-        const spin = drift * 3;
+        const spin = drift * 3 * hatDir;
 
         ctx.save();
         ctx.fillStyle = costume.hat.color;
@@ -186,6 +202,16 @@ function drawUpright(
   // === CAPE (behind body — draw first so body is on top) ===
   if (costume.cape) {
     drawCape(ctx, shoulderY, hipY, phase, fallTime, costume.cape);
+  }
+
+  // === BUNNY EARS (behind head) ===
+  if (costume.bunnyEars) {
+    drawBunnyEars(ctx, headCY, headR, phase, fallTime);
+  }
+
+  // === EASTER EGGS (drop during fall) ===
+  if (costume.dropsEggs && (phase === 'FALLING' || phase === 'JUMPING') && fallTime > 0) {
+    drawFallingEggs(ctx, fallTime);
   }
 
   // === HEAD (skin tone) ===
@@ -226,6 +252,11 @@ function drawUpright(
   ctx.moveTo(-2, hipY - 2);
   ctx.lineTo(2, hipY - 2);
   ctx.stroke();
+
+  // === SUMO BELT (mawashi) ===
+  if (costume.belt) {
+    drawBelt(ctx, hipY, phase, fallTime, costume.belt);
+  }
 
   ctx.lineWidth = 1.5;
 
@@ -508,6 +539,139 @@ function drawCape(
 }
 
 // ========================================================
+//  SUMO BELT (mawashi)
+// ========================================================
+
+function drawBelt(
+  ctx: CanvasRenderingContext2D,
+  hipY: number,
+  phase: FallerPhase,
+  fallTime: number,
+  beltColor: string,
+): void {
+  if (phase === 'JUMPING' || phase === 'FALLING') {
+    // Belt flies off — spirals away behind the performer
+    const t = fallTime;
+    if (t > 2.5) return; // gone
+    const drift = t;
+    ctx.save();
+    ctx.strokeStyle = beltColor;
+    ctx.lineWidth = 3;
+    ctx.translate(-drift * 8, -drift * 6);
+    ctx.rotate(drift * 4);
+    // Thick belt strip
+    ctx.beginPath();
+    ctx.moveTo(-4, 0);
+    ctx.lineTo(4, 0);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-3, 1.5);
+    ctx.lineTo(3, 1.5);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  // Belt on body (STANDING/LEANING)
+  ctx.fillStyle = beltColor;
+  ctx.fillRect(-4, hipY - 2, 8, 4);
+  // Belt knot
+  ctx.fillStyle = '#ddcc66';
+  ctx.fillRect(-1.5, hipY - 1, 3, 2);
+}
+
+// ========================================================
+//  BUNNY EARS
+// ========================================================
+
+function drawBunnyEars(
+  ctx: CanvasRenderingContext2D,
+  headCY: number,
+  headR: number,
+  phase: FallerPhase,
+  fallTime: number,
+): void {
+  ctx.fillStyle = '#ffffff';
+  const earTop = headCY - headR - 2;
+
+  if (phase === 'FALLING' || phase === 'JUMPING') {
+    // Ears flap behind like a cape
+    const wave = Math.sin(fallTime * 5) * 4;
+    const wave2 = Math.sin(fallTime * 6 + 1) * 3;
+    // Left ear
+    ctx.beginPath();
+    ctx.ellipse(-2 - wave * 0.3, earTop + wave2 * 0.5, 2, 7, -0.3 + wave * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    // Right ear
+    ctx.beginPath();
+    ctx.ellipse(2 + wave * 0.3, earTop + wave2 * 0.3, 2, 7, 0.3 - wave * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    // Pink inner
+    ctx.fillStyle = '#ffaabb';
+    ctx.beginPath();
+    ctx.ellipse(-2 - wave * 0.3, earTop + wave2 * 0.5, 1, 5, -0.3 + wave * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(2 + wave * 0.3, earTop + wave2 * 0.3, 1, 5, 0.3 - wave * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Ears upright on head
+    ctx.beginPath();
+    ctx.ellipse(-2, earTop - 5, 2, 6, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(2, earTop - 5, 2, 6, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    // Pink inner
+    ctx.fillStyle = '#ffaabb';
+    ctx.beginPath();
+    ctx.ellipse(-2, earTop - 5, 1, 4, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(2, earTop - 5, 1, 4, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ========================================================
+//  EASTER EGGS (dropped during fall)
+// ========================================================
+
+const EGG_COLORS = ['#ff4444', '#44cc44', '#4488ff', '#ffdd00', '#ff88cc', '#88ddff'];
+
+function drawFallingEggs(
+  ctx: CanvasRenderingContext2D,
+  fallTime: number,
+): void {
+  // Drop an egg every 0.4 seconds of fall
+  const numEggs = Math.min(Math.floor(fallTime / 0.4), 15);
+  for (let i = 0; i < numEggs; i++) {
+    const age = fallTime - i * 0.4;
+    // Eggs drift down and slightly to the side
+    const ex = (i % 2 === 0 ? -1 : 1) * (3 + i * 2) + Math.sin(age * 2) * 2;
+    const ey = age * 15; // fall behind performer
+    const color = EGG_COLORS[i % EGG_COLORS.length];
+
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.rotate(age * 2 + i);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Stripe
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-1.5, 0);
+    ctx.lineTo(1.5, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ========================================================
 //  HAT
 // ========================================================
 
@@ -723,7 +887,7 @@ function drawLanded(
   costume: Costume,
   targetType: TargetType,
   angle: number,
-  landedTime: number,
+  _landedTime: number,
 ): void {
   // Origin is at the landing point (ground surface level)
   // y < 0 is above surface, y > 0 is below
@@ -944,35 +1108,7 @@ function drawLanded(
     ctx.stroke();
   }
 
-  // Hat/wig — falls from the sky and settles on the ground
-  // Start position matches the fly-off trajectory (rightward + upward)
-  if (costume.hat) {
-    const settleTime = 1.2; // seconds for hat to flutter down
-    const restX = 10;
-    const restY = -14;
-    const restRot = 0.4;
-
-    let hatX: number, hatY: number, hatRot: number;
-    if (landedTime < settleTime) {
-      const t = landedTime / settleTime;
-      const ease = 1 - (1 - t) * (1 - t); // ease-out quad
-      // Start slightly above and to the side, flutter down to rest
-      hatX = restX + (1 - ease) * 5;
-      hatY = restY - (1 - ease) * 14;
-      hatRot = restRot + (1 - ease) * 2;
-    } else {
-      hatX = restX;
-      hatY = restY;
-      hatRot = restRot;
-    }
-
-    ctx.save();
-    ctx.translate(hatX, hatY);
-    ctx.rotate(hatRot);
-    ctx.fillStyle = costume.hat.color;
-    drawHatShape(ctx, costume.hat.style);
-    ctx.restore();
-  }
+  // Hat/wig — flew off during the jump, doesn't come back
 }
 
 // ========================================================

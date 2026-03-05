@@ -102,11 +102,6 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
         } else {
           f.vx = jumpVXForLean(state.jumpLeanAngle);
         }
-        // Back fall: rotate 180° so performer starts face-up
-        if (state.backFall && !f.verticalJump) {
-          f.angle = normalizeAngle(f.angle + 180);
-          f.totalRotation += 180;
-        }
         lockWind(state);
       }
       break;
@@ -138,8 +133,15 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
         // Land on top of the landing zone if over it, otherwise on the ground
         const landingY = getLandingHeight(f, state);
         if (f.y <= landingY) {
-          f.y = landingY;
-          f.phase = 'LANDED';
+          // Sumo bounce: if bouncy and missed the catcher (ground level), bounce back up
+          if (state.bouncy && landingY === 0 && Math.abs(f.vy) > 15) {
+            f.vy = -f.vy * 0.45; // reverse with dampening
+            f.vx *= 0.6;
+            f.y = 0.1;
+          } else {
+            f.y = landingY;
+            f.phase = 'LANDED';
+          }
         }
       }
       break;

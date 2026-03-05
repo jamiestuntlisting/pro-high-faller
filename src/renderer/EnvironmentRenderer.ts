@@ -97,6 +97,8 @@ const COSTUME_THEMES: string[] = [
   'stormyCity',  // 18: Waldo — busy urban scene
   'mountains',   // 19: Gorilla — wilderness
   'nightCity',   // 20: Straitjacket — dark institutional night
+  'sunset',      // 21: Sumo Wrestler — dramatic arena sunset
+  'dawn',        // 22: Easter Bunny — spring morning
 ];
 
 export function getTheme(level: number): BgTheme {
@@ -998,52 +1000,103 @@ function drawLandingZone(
         ctx.fillText('-', mx, groundY - 4);
       }
     } else {
-      // Boxes — cardboard box stack with store logos
+      // Boxes — cardboard box stack with store logos and edge lines
+      // Clip to landing zone boundaries so boxes don't bleed out
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(left, matTop, right - left, matHeight);
+      ctx.clip();
       // When landed, crush and scatter boxes at impact point
-      ctx.textBaseline = 'top';
-      const boxRows = Math.max(2, Math.floor(matHeight / 4));
-      // Pre-assign logos to box positions (deterministic from position)
+      const boxW = 11;
+      const boxH = 9;
+      const cols = Math.ceil((right - left) / boxW);
+      const boxRows = Math.max(2, Math.ceil(matHeight / boxH));
       const logos = ['##', 'HD', 'LW', '##', '##', 'HD', '##', 'LW', '##', '##'];
+
       for (let r = 0; r < boxRows; r++) {
-        const shade = r % 2 === 0 ? '#bb8844' : '#997733'; // cardboard brown
-        const baseOffset = (r % 2) * 6;
-        let boxIdx = 0;
-        for (let mx = left + baseOffset; mx < right; mx += 12) {
-          let drawX = mx;
-          let drawY = matTop + r * 4;
-          const logoKey = logos[((mx * 3 + r * 7) % logos.length + logos.length) % logos.length];
-          let boxText = `[${logoKey}]`;
-          let boxColor = shade;
+        const rowOffset = (r % 2) * Math.floor(boxW / 2); // stagger rows
+        for (let c = -1; c <= cols; c++) {
+          let bx = left + c * boxW + rowOffset;
+          let by = matTop + r * boxH;
+          const hash = ((c * 3 + r * 7) % logos.length + logos.length) % logos.length;
+          const logoKey = logos[hash];
+          let crushed = false;
 
-          // Logo colors
-          if (logoKey === 'HD') boxColor = '#dd6611'; // Home Depot orange
-          else if (logoKey === 'LW') boxColor = '#4477bb'; // Lowe's blue
-
+          // Landed impact: scatter and crush nearby boxes
           if (landedInfo) {
-            const dist = Math.abs(mx - landedInfo.x);
+            const dist = Math.abs(bx + boxW / 2 - landedInfo.x);
             if (dist < 25) {
               if (r < 2) {
-                // Top rows: scatter outward and crush
-                const hash = ((mx * 7 + r * 13) % 5) - 2;
-                const push = dist < 10 ? (landedInfo.x > mx ? -3 : 3) : 0;
-                drawX += hash * 2 + push;
-                drawY += Math.round(3 * Math.exp(-(dist * dist) / 120));
-                if (dist < 8 && r === 0) {
-                  boxText = '[__]'; // crushed flat
-                  boxColor = '#665533';
-                }
+                const nudge = ((c * 7 + r * 13) % 5) - 2;
+                const push = dist < 10 ? (landedInfo.x > bx ? -3 : 3) : 0;
+                bx += nudge * 2 + push;
+                by += Math.round(3 * Math.exp(-(dist * dist) / 120));
+                if (dist < 8 && r === 0) crushed = true;
               } else if (r < 4) {
-                const hash = ((mx * 7 + r * 13) % 3) - 1;
-                drawX += hash;
+                bx += ((c * 7 + r * 13) % 3) - 1;
               }
             }
           }
 
-          ctx.fillStyle = boxColor;
-          ctx.fillText(boxText, drawX, drawY);
-          boxIdx++;
+          // Clip to landing zone
+          if (bx + boxW < left || bx > right) continue;
+
+          // Box face color — alternate shades per row
+          const faceColor = crushed ? '#665533'
+            : r % 2 === 0 ? '#bb8844' : '#aa7733';
+          const edgeDark = crushed ? '#443322' : '#7a5522'; // shadow edge
+          const edgeLight = crushed ? '#776644' : '#ccaa66'; // highlight edge
+
+          if (crushed) {
+            // Crushed: flatten the box
+            ctx.fillStyle = faceColor;
+            ctx.fillRect(bx, by + boxH - 3, boxW, 3);
+            ctx.strokeStyle = edgeDark;
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(bx, by + boxH - 3, boxW, 3);
+          } else {
+            // Box face
+            ctx.fillStyle = faceColor;
+            ctx.fillRect(bx, by, boxW, boxH);
+
+            // Bottom/right shadow edges (darker)
+            ctx.strokeStyle = edgeDark;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(bx + boxW, by);
+            ctx.lineTo(bx + boxW, by + boxH);
+            ctx.lineTo(bx, by + boxH);
+            ctx.stroke();
+
+            // Top/left highlight edges (lighter)
+            ctx.strokeStyle = edgeLight;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(bx, by + boxH);
+            ctx.lineTo(bx, by);
+            ctx.lineTo(bx + boxW, by);
+            ctx.stroke();
+
+            // Tape line across middle of box
+            ctx.strokeStyle = '#aa8855';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(bx + 1, by + Math.floor(boxH / 2));
+            ctx.lineTo(bx + boxW - 1, by + Math.floor(boxH / 2));
+            ctx.stroke();
+
+            // Logo text on some boxes
+            if (logoKey === 'HD' || logoKey === 'LW') {
+              ctx.font = '5px monospace';
+              ctx.textBaseline = 'top';
+              ctx.fillStyle = logoKey === 'HD' ? '#dd6611' : '#4477bb';
+              ctx.fillText(logoKey, bx + 2, by + 1);
+              ctx.font = '7px monospace'; // restore
+            }
+          }
         }
       }
+      ctx.restore(); // end box clip
     }
   }
 
