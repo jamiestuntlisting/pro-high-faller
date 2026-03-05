@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const SCORES_KEY = 'highscores';
@@ -12,6 +12,9 @@ interface HighScore {
   date: string;
 }
 
+// Uses UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars
+const redis = Redis.fromEnv();
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers for potential mobile app access
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const scores: HighScore[] = (await kv.get<HighScore[]>(SCORES_KEY)) || [];
+      const scores: HighScore[] = (await redis.get<HighScore[]>(SCORES_KEY)) || [];
       return res.status(200).json(scores);
     }
 
@@ -48,12 +51,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       // Get existing scores, add new, sort, keep top N
-      const existing: HighScore[] = (await kv.get<HighScore[]>(SCORES_KEY)) || [];
+      const existing: HighScore[] = (await redis.get<HighScore[]>(SCORES_KEY)) || [];
       existing.push(newScore);
       existing.sort((a, b) => b.reputation - a.reputation);
       const top = existing.slice(0, MAX_SCORES);
 
-      await kv.set(SCORES_KEY, top);
+      await redis.set(SCORES_KEY, top);
       return res.status(200).json(top);
     }
 
