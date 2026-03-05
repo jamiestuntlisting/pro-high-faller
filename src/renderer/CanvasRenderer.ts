@@ -281,7 +281,7 @@ export class CanvasRenderer {
     // Lazy init particles
     if (!this.windParticles) {
       this.windParticles = [];
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 40; i++) {
         this.windParticles.push({
           x: Math.random() * GAME_WIDTH,
           y: viewY + Math.random() * GAME_HEIGHT,
@@ -301,8 +301,8 @@ export class CanvasRenderer {
     const skyBrightness = theme.skyStops[0][1]; // top sky color
     // If sky is dark (typical), use bright wind; if light, use dark wind
     const isDark = skyBrightness.startsWith('#0') || skyBrightness.startsWith('#1') || skyBrightness.startsWith('#2');
-    const windColor = isDark ? 'rgba(200, 220, 255, 0.3)' : 'rgba(40, 30, 20, 0.25)';
-    const streakLen = Math.min(Math.abs(wind) * 1.5, 12);
+    const windColor = isDark ? 'rgba(200, 220, 255, 0.5)' : 'rgba(40, 30, 20, 0.4)';
+    const streakLen = Math.min(Math.abs(wind) * 2, 16);
 
     for (const p of particles) {
       // Move horizontally by wind
@@ -324,7 +324,7 @@ export class CanvasRenderer {
       if (p.y >= viewTop && p.y <= groundY) {
         // Draw as directional streaks, not dots
         ctx.strokeStyle = windColor;
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x + (speed > 0 ? streakLen : -streakLen), p.y + Math.sin(p.phase) * 1.5);

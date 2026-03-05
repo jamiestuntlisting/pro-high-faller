@@ -92,7 +92,7 @@ const COSTUME_THEMES: string[] = [
   'desert',      // 13: Orange Jumpsuit — prison in the desert
   'mountains',   // 14: Leather Cowboy — rugged mountain west
   'stormyCity',  // 15: Hi-Vis — construction site, stormy day
-  'nightCity',   // 16: Spy — espionage under cover of night
+  'stormyCity',  // 16: Spy — dark suit needs lighter sky for contrast
   'dusk',        // 17: Fantasy Wizard — mystical twilight
   'stormyCity',  // 18: Waldo — busy urban scene
   'mountains',   // 19: Gorilla — wilderness
@@ -878,79 +878,118 @@ function drawLandingZone(
 
   if (level.targetType === 'water') {
     const matTop = groundY - matHeight;
+    const waterSurface = matTop;
 
-    // Tank structure — solid opaque background + walls + window
-    ctx.fillStyle = '#0a1828';
+    // Opaque tank body — dark steel, performer NOT visible through walls
+    ctx.fillStyle = '#2a3040';
     ctx.fillRect(left, matTop, right - left, matHeight);
 
-    // Side walls
-    ctx.fillStyle = '#556677';
-    ctx.fillRect(left, matTop, 3, matHeight);
-    ctx.fillRect(right - 3, matTop, 3, matHeight);
+    // Water surface visible at the top — 2 rows of waves
+    ctx.fillStyle = '#4477aa';
+    for (let wx = left + 3; wx < right - 3; wx += 6) {
+      ctx.fillText('~', wx, matTop + 6);
+    }
+    ctx.fillStyle = '#335588';
+    for (let wx = left + 6; wx < right - 3; wx += 6) {
+      ctx.fillText('~', wx, matTop + 12);
+    }
+
+    // Viewing window — rectangular cutout in the front wall
+    const winLeft = left + Math.floor((right - left) * 0.2);
+    const winRight = left + Math.floor((right - left) * 0.8);
+    const winTop = matTop + Math.floor(matHeight * 0.3);
+    const winBottom = matTop + Math.floor(matHeight * 0.85);
+    const winW = winRight - winLeft;
+    const winH = winBottom - winTop;
+
+    // Window opening — dark water visible through glass
+    ctx.fillStyle = '#0a1828';
+    ctx.fillRect(winLeft, winTop, winW, winH);
+
+    // Glass tint/sheen
+    ctx.fillStyle = 'rgba(100, 160, 200, 0.08)';
+    ctx.fillRect(winLeft, winTop, winW, winH);
+
+    // Window frame (metallic border)
+    ctx.strokeStyle = '#667788';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(winLeft, winTop, winW, winH);
+
+    // Bubbles inside window (ambient)
+    ctx.fillStyle = 'rgba(136, 187, 221, 0.3)';
+    for (let b = 0; b < 4; b++) {
+      const bx = winLeft + 5 + ((b * 17 + 3) % (winW - 10));
+      const by = winTop + 5 + ((b * 13 + 7) % (winH - 10));
+      ctx.beginPath();
+      ctx.arc(bx, by, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Side walls (thick steel)
+    ctx.fillStyle = '#3a4555';
+    ctx.fillRect(left, matTop, 4, matHeight);
+    ctx.fillRect(right - 4, matTop, 4, matHeight);
 
     // Top rim
     ctx.fillStyle = '#667788';
-    ctx.fillRect(left, matTop, right - left, 2);
+    ctx.fillRect(left, matTop, right - left, 3);
 
-    // Viewing window on right wall
-    const winY = matTop + matHeight * 0.25;
-    const winH = matHeight * 0.4;
-    ctx.fillStyle = '#1a3855';
-    ctx.fillRect(right - 3, winY, 3, winH);
-    ctx.fillStyle = '#88aacc';
-    ctx.fillRect(right - 1, winY, 1, winH);
-
-    // Rows of waves scaling with depth
-    const rows = Math.max(2, Math.floor(matHeight / 7));
-    for (let r = 0; r < rows; r++) {
-      const shade = r === 0 ? '#4477aa' : r === 1 ? '#335588' : '#224466';
-      ctx.fillStyle = shade;
-      const offset = (r % 2) * 3;
-      const rowY = groundY - r * 7;
-      for (let wx = left + offset + 3; wx < right - 3; wx += 6) {
-        ctx.fillText('~', wx, rowY);
-      }
-    }
+    // Bottom edge
+    ctx.fillStyle = '#556677';
+    ctx.fillRect(left, groundY - 2, right - left, 2);
 
     // Water splash animation — only if performer actually hit the water
     const hitWater = landedInfo && landedInfo.x >= left && landedInfo.x <= right;
-    if (hitWater && landedInfo.time < 1.5) {
+    if (hitWater && landedInfo.time < 2.0) {
       const t = landedInfo.time;
-      const splashAlpha = Math.max(0, 1 - t / 1.5);
-      const waterSurface = groundY - matHeight; // top of water
+      const splashAlpha = Math.max(0, 1 - t / 2.0);
+
+      // Detect belly flop: for water, ideal angle is 0 (feet first)
+      // Angles near 90 or 270 = horizontal = belly/back flop
+      const normAngle = ((landedInfo.angle % 360) + 360) % 360;
+      const angFromFeet = Math.min(normAngle, 360 - normAngle); // 0=perfect, 90=worst
+      const isBellyFlop = angFromFeet > 45;
+      const splashMult = isBellyFlop ? 3 : 1;
 
       ctx.save();
       ctx.globalAlpha = splashAlpha;
 
       // Splash droplets rising and falling from water surface
-      const dropCount = 8;
+      const dropCount = 8 * splashMult;
       for (let i = 0; i < dropCount; i++) {
         const seed = ((i * 17 + 7) % 13) / 13;
-        const spreadX = (seed - 0.5) * 40;
-        const launchV = 20 + seed * 30;
+        const spreadX = (seed - 0.5) * 40 * splashMult;
+        const launchV = (20 + seed * 30) * (isBellyFlop ? 1.5 : 1);
         const dropY = waterSurface - launchV * t + 60 * t * t;
         const dropX = landedInfo.x + spreadX * t;
 
         if (dropY < waterSurface) {
           ctx.fillStyle = '#88bbdd';
           ctx.beginPath();
-          ctx.arc(dropX, dropY, 1.5 - t * 0.8, 0, Math.PI * 2);
+          ctx.arc(dropX, dropY, (isBellyFlop ? 2.5 : 1.5) - t * 0.8, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
       // Splash rings on water surface
-      const ringRadius = 5 + t * 25;
+      const ringRadius = (5 + t * 25) * (isBellyFlop ? 1.8 : 1);
       ctx.strokeStyle = '#88bbdd';
-      ctx.lineWidth = 1.5 - t;
+      ctx.lineWidth = (isBellyFlop ? 2 : 1.5) - t;
       ctx.beginPath();
       ctx.ellipse(landedInfo.x, waterSurface, ringRadius, 3, 0, 0, Math.PI * 2);
       ctx.stroke();
-      if (t < 0.8) {
-        const ring2 = 2 + t * 15;
+      if (t < (isBellyFlop ? 1.2 : 0.8)) {
+        const ring2 = 2 + t * 15 * (isBellyFlop ? 1.5 : 1);
         ctx.beginPath();
         ctx.ellipse(landedInfo.x, waterSurface, ring2, 2, 0, 0, Math.PI * 2);
         ctx.stroke();
+      }
+
+      // Extra splash column for belly flop
+      if (isBellyFlop && t < 0.8) {
+        const colH = 30 * (1 - t / 0.8);
+        ctx.fillStyle = 'rgba(136, 187, 221, 0.5)';
+        ctx.fillRect(landedInfo.x - 4, waterSurface - colH, 8, colH);
       }
 
       ctx.restore();

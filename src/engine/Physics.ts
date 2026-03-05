@@ -206,7 +206,6 @@ function advancePanicCountdown(state: GameState, dt: number): void {
 /** Returns the Y height (in feet) where the faller should land. */
 function getLandingHeight(f: FallerState, state: GameState): number {
   const level = state.level;
-  if (level.targetType === 'water') return 0;
 
   // Mat height scales with fall height
   const matHeightPx = landingZoneHeight(level.height, level.targetType);
@@ -219,7 +218,7 @@ function getLandingHeight(f: FallerState, state: GameState): number {
   const distFromCenter = Math.abs(f.x - centerFt);
 
   if (distFromCenter <= halfWidthFt) {
-    return matHeightFt;
+    return matHeightFt; // land on top of catcher (including water surface)
   }
   return 0;
 }

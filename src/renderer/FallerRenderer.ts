@@ -134,8 +134,9 @@ export function draw(
     if (backFall) {
       ctx.scale(-1, 1);
     }
-    // Negate angle during LEANING with backFall so lean goes toward edge, not building
-    const rotAngle = (backFall && phase === 'LEANING') ? -angle : angle;
+    // Negate angle when backFall: mirror + negated angle = correct visual rotation
+    // LEANING: lean toward edge, JUMPING: head goes right, FALLING: face-up initially
+    const rotAngle = backFall ? -angle : angle;
     ctx.rotate((rotAngle * Math.PI) / 180);
 
     if (isTucked && phase === 'FALLING') {
