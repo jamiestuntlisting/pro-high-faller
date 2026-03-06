@@ -99,6 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error('Scores API error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: 'Internal server error', detail: msg });
   }
 }
