@@ -76,6 +76,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // Temporary debug: ?debug=1 to see resolved config (no secrets)
+  if (req.query.debug === '1') {
+    return res.status(200).json({
+      resolvedUrl: resolvedUrl ? resolvedUrl.replace(/\/\/.*@/, '//***@') : '(empty)',
+      hasToken: !!resolvedToken,
+      tokenLength: resolvedToken.length,
+      rawUrlPrefix: REST_URL.slice(0, 15) + '...',
+      envKeys: Object.keys(process.env).filter(k =>
+        k.includes('REDIS') || k.includes('KV') || k.includes('UPSTASH')
+      ),
+    });
+  }
+
   try {
     if (req.method === 'GET') {
       const scores = (await redisGet(SCORES_KEY)) || [];
