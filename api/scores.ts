@@ -12,8 +12,22 @@ interface HighScore {
   date: string;
 }
 
-// Uses UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars
-const redis = Redis.fromEnv();
+// Try multiple env var naming conventions (Vercel KV vs Upstash direct)
+const url =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_REST_API_URL ||
+  process.env.REDIS_URL ||
+  '';
+const token =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.KV_REST_API_TOKEN ||
+  process.env.REDIS_TOKEN ||
+  '';
+
+function getRedis(): Redis | null {
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers for potential mobile app access
@@ -23,6 +37,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  const redis = getRedis();
+  if (!redis) {
+    // List which env vars we can see (names only, not values) for debugging
+    const found = [
+      'UPSTASH_REDIS_REST_URL',
+      'KV_REST_API_URL',
+      'REDIS_URL',
+      'UPSTASH_REDIS_REST_TOKEN',
+      'KV_REST_API_TOKEN',
+      'REDIS_TOKEN',
+    ].filter(k => !!process.env[k]);
+    return res.status(500).json({
+      error: 'Redis not configured',
+      hint: 'Need UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (or KV_REST_API_URL + KV_REST_API_TOKEN)',
+      envVarsFound: found,
+    });
   }
 
   try {
