@@ -11,20 +11,37 @@ interface HighScore {
   date: string;
 }
 
-// Upstash REST API — no SDK needed, just fetch
-const REDIS_URL =
+// Try REST API env vars first (Upstash REST), then fall back to Redis URL
+const REST_URL =
   process.env.UPSTASH_REDIS_REST_URL ||
   process.env.KV_REST_API_URL ||
+  process.env.KV_URL ||
   '';
-const REDIS_TOKEN =
+const REST_TOKEN =
   process.env.UPSTASH_REDIS_REST_TOKEN ||
   process.env.KV_REST_API_TOKEN ||
   '';
 
+// If we got a redis:// URL instead of https:// REST URL, extract the password
+// redis://default:PASSWORD@host:port → https://host REST URL with PASSWORD as token
+let resolvedUrl = REST_URL;
+let resolvedToken = REST_TOKEN;
+
+if (REST_URL.startsWith('redis://') || REST_URL.startsWith('rediss://')) {
+  try {
+    const parsed = new URL(REST_URL);
+    // Upstash REST endpoint is at the same host but on HTTPS port 443
+    resolvedUrl = `https://${parsed.hostname}`;
+    resolvedToken = REST_TOKEN || parsed.password || '';
+  } catch {
+    // leave as-is
+  }
+}
+
 async function redisGet(key: string): Promise<HighScore[] | null> {
-  if (!REDIS_URL || !REDIS_TOKEN) return null;
-  const res = await fetch(`${REDIS_URL}/get/${key}`, {
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  if (!resolvedUrl || !resolvedToken) return null;
+  const res = await fetch(`${resolvedUrl}/get/${key}`, {
+    headers: { Authorization: `Bearer ${resolvedToken}` },
   });
   const data = await res.json();
   if (!data.result) return null;
@@ -32,11 +49,11 @@ async function redisGet(key: string): Promise<HighScore[] | null> {
 }
 
 async function redisSet(key: string, value: HighScore[]): Promise<void> {
-  if (!REDIS_URL || !REDIS_TOKEN) return;
-  await fetch(`${REDIS_URL}/set/${key}`, {
+  if (!resolvedUrl || !resolvedToken) return;
+  await fetch(`${resolvedUrl}/set/${key}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${REDIS_TOKEN}`,
+      Authorization: `Bearer ${resolvedToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(JSON.stringify(value)),
@@ -52,15 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  if (!REDIS_URL || !REDIS_TOKEN) {
-    const found = [
-      'UPSTASH_REDIS_REST_URL', 'KV_REST_API_URL',
-      'UPSTASH_REDIS_REST_TOKEN', 'KV_REST_API_TOKEN',
-    ].filter(k => !!process.env[k]);
+  if (!resolvedUrl || !resolvedToken) {
     return res.status(500).json({
       error: 'Redis not configured',
-      hint: 'Need UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN',
-      envVarsFound: found,
+      hint: 'Need UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN env vars',
     });
   }
 
