@@ -69,7 +69,7 @@ export function score(state: GameState): LandingResult {
   const pay = calculatePay(grade, level.pay, horizontalAccuracy);
 
   // Credibility points — reputation in the stunt community
-  const credibilityPoints = calculateCredibility(grade, horizontalAccuracy, level.height, faller.totalRotation);
+  const credibilityPoints = calculateCredibility(grade, horizontalAccuracy, level.height, faller.totalRotation, level.targetType, missedTarget);
 
   return {
     landingAngle,
@@ -177,7 +177,7 @@ function calculatePay(grade: Grade, basePay: number, accuracy: number): number {
   return Math.round(basePay * multipliers[grade] * Math.max(accuracy, 0.1));
 }
 
-function calculateCredibility(grade: Grade, horizontalAccuracy: number, heightFt: number, totalRotation: number): number {
+function calculateCredibility(grade: Grade, horizontalAccuracy: number, heightFt: number, totalRotation: number, targetType: string, missedTarget: boolean): number {
   // Base cred from grade
   const baseCred: Record<Grade, number> = {
     'A+': 15,
@@ -188,6 +188,12 @@ function calculateCredibility(grade: Grade, horizontalAccuracy: number, heightFt
     'F': -10,
   };
   let cred = baseCred[grade];
+
+  // Landing on boxes is gutsy — if you hit them at all, no rep loss.
+  // The stunt community respects anyone who lands on cardboard.
+  if (targetType === 'boxes' && !missedTarget && cred < 0) {
+    cred = 0;
+  }
 
   // Height bonus — higher falls are more impressive
   const heightBonus = Math.floor((heightFt - 20) / 20);
