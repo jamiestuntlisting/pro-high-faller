@@ -119,10 +119,6 @@ function App() {
       {screen === 'briefing' && (
         <StartScreen
           level={level}
-          careerHealth={careerHealth}
-          careerEarnings={careerEarnings}
-          careerCredibility={careerCredibility}
-          highestLevel={currentLevel}
           onStart={handleStart}
         />
       )}

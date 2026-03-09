@@ -1,32 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { LevelConfig } from '../types';
-import { getHighScores, fetchHighScores, type HighScore } from '../utils/highScores';
-import { HighScoreTable } from './RetirementScreen';
 
 interface Props {
   level: LevelConfig;
-  careerHealth: number;
-  careerEarnings: number;
-  careerCredibility: number;
-  highestLevel: number;
   onStart: () => void;
 }
 
 export function StartScreen({
   level,
-  careerHealth,
-  careerEarnings,
-  careerCredibility,
-  highestLevel,
   onStart,
 }: Props) {
-  const [scores, setScores] = useState<HighScore[]>(getHighScores);
-
-  // Fetch shared scores from server
-  useEffect(() => {
-    fetchHighScores().then(setScores);
-  }, []);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') { e.preventDefault(); onStart(); }
@@ -37,15 +20,12 @@ export function StartScreen({
 
   const handleTap = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    if (target.tagName === 'BUTTON') return;
     onStart();
   };
 
   return (
     <div style={styles.container} onClick={handleTap}>
-      <h1 style={styles.title}>STUNTLISTING'S</h1>
-      <h2 style={styles.subtitle}>PRO STUNT HIGH FALLER</h2>
-
       <div style={styles.briefing}>
         <div style={styles.jobHeader}>
           <span style={styles.levelBadge}>JOB #{level.level}</span>
@@ -53,7 +33,6 @@ export function StartScreen({
         </div>
 
         <div style={styles.coordinator}>
-          <div style={styles.coordLabel}>STUNT COORDINATOR:</div>
           <div style={styles.dialogue}>"{level.coordinatorLine}"</div>
         </div>
 
@@ -89,31 +68,9 @@ export function StartScreen({
         </div>
       </div>
 
-      {/* Career stats */}
-      {highestLevel > 1 && (
-        <div style={styles.career}>
-          <span>Level: {highestLevel}</span>
-          <span>Earnings: ${careerEarnings.toLocaleString()}</span>
-          <span>Cred: {careerCredibility}</span>
-          <span>Health: {careerHealth}/200</span>
-        </div>
-      )}
-
       <button style={styles.startButton} onClick={onStart}>
         LET'S DO IT
       </button>
-
-      {scores.length > 0 && (
-        <div style={styles.scoresWrap}>
-          <HighScoreTable scores={scores} />
-        </div>
-      )}
-
-      <div style={styles.controls}>
-        <div style={styles.controlLine}>SPACE — lean / jump / tuck</div>
-        <div style={styles.controlLine}>Hold SPACE in air to tuck (fast spin)</div>
-        <div style={styles.controlLine}>Release SPACE to spread (slow spin)</div>
-      </div>
     </div>
   );
 }
@@ -131,105 +88,68 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '20px',
     textAlign: 'center',
   },
-  title: {
-    fontSize: '18px',
-    color: '#FFD700',
-    margin: '0',
-    textShadow: '2px 2px 0 #8B6914',
-    letterSpacing: '2px',
-  },
-  subtitle: {
-    fontSize: '24px',
-    color: '#FFD700',
-    margin: '4px 0 24px 0',
-    textShadow: '3px 3px 0 #8B6914',
-  },
   briefing: {
     background: '#1a1a2e',
     border: '2px solid #333',
     borderRadius: '4px',
-    padding: '16px',
-    maxWidth: '400px',
+    padding: '24px',
+    maxWidth: '420px',
     width: '90%',
-    marginBottom: '16px',
+    marginBottom: '24px',
   },
   jobHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '12px',
+    marginBottom: '16px',
     flexWrap: 'wrap',
     gap: '8px',
   },
   levelBadge: {
     background: '#FFD700',
     color: '#000',
-    padding: '3px 8px',
-    fontSize: '10px',
+    padding: '5px 12px',
+    fontSize: '14px',
     borderRadius: '2px',
     fontWeight: 'bold',
   },
   production: {
     color: '#88CCFF',
-    fontSize: '10px',
+    fontSize: '14px',
   },
   coordinator: {
     borderTop: '1px solid #333',
-    paddingTop: '10px',
-    marginBottom: '12px',
-  },
-  coordLabel: {
-    fontSize: '7px',
-    color: '#888',
-    marginBottom: '6px',
+    paddingTop: '14px',
+    marginBottom: '16px',
   },
   dialogue: {
-    fontSize: '9px',
+    fontSize: '12px',
     color: '#CCCCCC',
-    lineHeight: '1.6',
+    lineHeight: '1.8',
     fontStyle: 'italic',
   },
   jobDetails: {
     borderTop: '1px solid #333',
-    paddingTop: '10px',
+    paddingTop: '14px',
   },
   detailRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '3px 0',
-    fontSize: '8px',
+    padding: '6px 0',
+    fontSize: '13px',
   },
   detailLabel: {
     color: '#888',
   },
-  career: {
-    display: 'flex',
-    gap: '16px',
-    fontSize: '7px',
-    color: '#888',
-    marginBottom: '16px',
-  },
   startButton: {
     fontFamily: '"Press Start 2P", "Courier New", monospace',
-    fontSize: '14px',
-    padding: '12px 30px',
+    fontSize: '16px',
+    padding: '14px 36px',
     background: '#1a4a1a',
     color: '#44FF44',
     border: '3px solid #44FF44',
     borderRadius: '4px',
     cursor: 'pointer',
-    marginBottom: '20px',
     transition: 'all 0.1s',
-  },
-  controls: {
-    fontSize: '7px',
-    color: '#666',
-    lineHeight: '2',
-  },
-  controlLine: {},
-  scoresWrap: {
-    maxWidth: '400px',
-    width: '90%',
-    marginBottom: '16px',
   },
 };
