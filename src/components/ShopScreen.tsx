@@ -9,16 +9,22 @@ export interface ShopItem {
   healthMax?: number;
   description: string;
   maxUses?: number;     // Lifetime uses per career (undefined = unlimited)
+  unlockLevel: number;  // Level at which item becomes visible in shop
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // Each tier is 20%+ better HP/$ than the previous — saving up pays off
-  { id: 'ice',       name: 'ICE PACK',         cost: 60,   healthBonus: 10, maxUses: 10, description: 'Bag of ice. Old school.' },           // 0.167 HP/$
-  { id: 'ibuprofen', name: 'IBUPROFEN',        cost: 100,  healthBonus: 20, maxUses: 8,  description: 'Take two and call me in the morning.' }, // 0.200 HP/$ (+20%)
-  { id: 'cortisone', name: 'CORTISONE SHOT',   cost: 200,  healthBonus: 50, maxUses: 5,  description: "The doc says it's fine. Probably." },  // 0.250 HP/$ (+25%)
-  { id: 'chiro',     name: 'CHIROPRACTOR',     cost: 350,  healthBonus: 110, maxUses: 4, description: 'That crack was satisfying.' },         // 0.314 HP/$ (+26%)
-  { id: 'pt',        name: 'PHYSICAL THERAPY',  cost: 500,  healthBonus: 200, maxUses: 3, description: 'Doing it the right way.' },            // 0.400 HP/$ (+27%)
-  { id: 'stemcell',  name: 'STEM CELL TREATMENT', cost: 3000, healthBonus: 0, healthMin: -10, healthMax: 120, description: 'Cutting edge. Results may vary... wildly.' },
+  // Unlock schedule based on real-world usage among stunt performers:
+  // Ice & ibuprofen — everyone uses these from day one
+  // Chiro — very common in the stunt world, unlocks early
+  // Cortisone — requires a doctor, more serious injuries
+  // PT — prescribed for longer-term recovery
+  // Stem cells — experimental, rare, expensive
+  { id: 'ice',       name: 'ICE PACK',             cost: 60,   healthBonus: 10,  maxUses: 10, unlockLevel: 1,  description: 'Bag of ice. Old school.' },
+  { id: 'ibuprofen', name: 'IBUPROFEN',            cost: 100,  healthBonus: 20,  maxUses: 8,  unlockLevel: 1,  description: 'Take two and call me in the morning.' },
+  { id: 'chiro',     name: 'CHIROPRACTOR',         cost: 350,  healthBonus: 110, maxUses: 4,  unlockLevel: 3,  description: 'That crack was satisfying.' },
+  { id: 'cortisone', name: 'CORTISONE SHOT',       cost: 200,  healthBonus: 50,  maxUses: 5,  unlockLevel: 5,  description: "The doc says it's fine. Probably." },
+  { id: 'pt',        name: 'PHYSICAL THERAPY',     cost: 500,  healthBonus: 200, maxUses: 3,  unlockLevel: 7,  description: 'Doing it the right way.' },
+  { id: 'stemcell',  name: 'STEM CELL TREATMENT',  cost: 3000, healthBonus: 0,   healthMin: -10, healthMax: 120, unlockLevel: 10, description: 'Cutting edge. Results may vary... wildly.' },
 ];
 
 /** Stem cells degrade with each use — initially great, then body starts rejecting */
@@ -39,6 +45,7 @@ function getDepletedQuip(itemId: string): string {
 }
 
 interface Props {
+  currentLevel: number;
   careerHealth: number;
   careerEarnings: number;
   careerCredibility: number;
@@ -47,7 +54,7 @@ interface Props {
   onSkip: () => void;
 }
 
-export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, itemUses, onPurchase, onSkip }: Props) {
+export function ShopScreen({ currentLevel, careerHealth, careerEarnings, careerCredibility, itemUses, onPurchase, onSkip }: Props) {
   const [spaceReleased, setSpaceReleased] = useState(false);
   const [stemResult, setStemResult] = useState<number | null>(null);
   const [purchased, setPurchased] = useState(false);
@@ -124,9 +131,9 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
           </div>
         )}
 
-        {/* Items */}
+        {/* Items — only show unlocked ones */}
         <div style={styles.itemList}>
-          {SHOP_ITEMS.map((item) => {
+          {SHOP_ITEMS.filter(item => currentLevel >= item.unlockLevel).map((item) => {
             const canAfford = careerEarnings >= item.cost;
             const healthFull = careerHealth >= 200;
             const isRandom = item.healthMin !== undefined && item.healthMax !== undefined;

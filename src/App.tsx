@@ -153,6 +153,7 @@ function App() {
 
       {screen === 'shop' && (
         <ShopScreen
+          currentLevel={currentLevel}
           careerHealth={careerHealth}
           careerEarnings={careerEarnings}
           careerCredibility={careerCredibility}
