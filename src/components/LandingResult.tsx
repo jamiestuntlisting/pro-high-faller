@@ -48,31 +48,38 @@ export function LandingResult({
         </h2>
 
         <div style={styles.stats}>
+          <div style={styles.headerRow}>
+            <span />
+            <span style={styles.values}>
+              <span style={styles.colHeader}>EARNED</span>
+              <span style={styles.colHeader}>TOTAL</span>
+            </span>
+          </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>PAY</span>
             <span style={styles.values}>
-              <span style={{ color: result.pay > 0 ? '#55aa55' : '#666' }}>
+              <span style={{ ...styles.valCell, color: result.pay > 0 ? '#55aa55' : '#666' }}>
                 {result.pay > 0 ? '+' : ''}${result.pay.toLocaleString()}
               </span>
-              <span style={{ color: '#FFD700' }}>${careerEarnings.toLocaleString()}</span>
+              <span style={{ ...styles.valCell, color: '#FFD700' }}>${careerEarnings.toLocaleString()}</span>
             </span>
           </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>REPUTATION</span>
             <span style={styles.values}>
-              <span style={{ color: result.credibilityPoints > 0 ? '#55aa55' : result.credibilityPoints < 0 ? '#aa4444' : '#666' }}>
+              <span style={{ ...styles.valCell, color: result.credibilityPoints > 0 ? '#55aa55' : result.credibilityPoints < 0 ? '#aa4444' : '#666' }}>
                 {result.credibilityPoints > 0 ? '+' : ''}{result.credibilityPoints}
               </span>
-              <span style={{ color: '#88CCFF' }}>{careerCredibility}</span>
+              <span style={{ ...styles.valCell, color: '#88CCFF' }}>{careerCredibility}</span>
             </span>
           </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>HEALTH</span>
             <span style={styles.values}>
-              {result.injuryPoints > 0 && (
-                <span style={{ color: '#aa4444' }}>-{result.injuryPoints}</span>
-              )}
-              <span style={{ color: careerHealth <= 40 ? '#aa4444' : careerHealth <= 100 ? '#aaaa44' : '#55aa55' }}>
+              <span style={{ ...styles.valCell, color: result.injuryPoints > 0 ? '#aa4444' : '#666' }}>
+                {result.injuryPoints > 0 ? `-${result.injuryPoints}` : '-'}
+              </span>
+              <span style={{ ...styles.valCell, color: careerHealth <= 40 ? '#aa4444' : careerHealth <= 100 ? '#aaaa44' : '#55aa55' }}>
                 {careerHealth}/200
               </span>
             </span>
@@ -148,6 +155,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '16px',
     marginBottom: '20px',
   },
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '0 0 4px 0',
+  },
+  colHeader: {
+    fontSize: '9px',
+    color: '#555',
+    letterSpacing: '1px',
+    textAlign: 'right',
+    minWidth: '60px',
+  },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -162,6 +181,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '12px',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  valCell: {
+    minWidth: '60px',
+    textAlign: 'right' as const,
   },
   buttons: {
     display: 'flex',
