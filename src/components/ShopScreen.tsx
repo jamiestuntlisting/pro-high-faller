@@ -23,12 +23,6 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 /** Stem cells degrade with each use — initially great, then body starts rejecting */
 function getStemCellRange(uses: number): { min: number; max: number } {
-  // Use 0: -10 to +120 (avg +55, almost always positive)
-  // Use 1: -30 to +100 (avg +35, mostly positive)
-  // Use 2: -50 to +80  (avg +15, coin flip)
-  // Use 3: -70 to +60  (avg -5, expected value negative)
-  // Use 4: -90 to +40  (avg -25, mostly rejection)
-  // Use 5+: -110 to +20 (avg -45, likely rejection)
   const decay = Math.min(uses, 5) * 20;
   return { min: -10 - decay, max: 120 - decay };
 }
@@ -54,8 +48,6 @@ interface Props {
 }
 
 export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, itemUses, onPurchase, onSkip }: Props) {
-  // Require SPACE to be released before accepting it — prevents the keypress
-  // that opened the shop (from the result screen) from immediately skipping it.
   const [spaceReleased, setSpaceReleased] = useState(false);
   const [stemResult, setStemResult] = useState<number | null>(null);
   const [purchased, setPurchased] = useState(false);
@@ -76,12 +68,10 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
   }, [onSkip, spaceReleased]);
 
   const handleBuy = useCallback((item: ShopItem) => {
-    // Safety: double-check affordability
     if (careerEarnings < item.cost) return;
 
     setPurchased(true);
     if (item.healthMin !== undefined && item.healthMax !== undefined) {
-      // Stem cell: range degrades with each use (body builds resistance)
       const used = itemUses[item.id] || 0;
       const { min, max } = getStemCellRange(used);
       const roll = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -96,12 +86,6 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
 
   return (
     <div style={styles.container}>
-      <style>{`
-        @keyframes shopPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.35; }
-        }
-      `}</style>
       <div style={styles.panel}>
         <h2 style={styles.title}>THE MORNING AFTER</h2>
         <div style={styles.subtitle}>Your body's been through hell.</div>
@@ -135,7 +119,7 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
             ...styles.stemResult,
             color: stemResult >= 0 ? '#44aa44' : '#aa4444',
           }}>
-            STEM CELL RESULT: {stemResult >= 0 ? '+' : ''}{stemResult} HP
+            STEM CELL: {stemResult >= 0 ? '+' : ''}{stemResult} HP
             {stemResult >= 80 ? ' — MIRACLE!' : stemResult >= 40 ? ' — NOT BAD!' : stemResult >= 0 ? '' : ' — REJECTION!'}
           </div>
         )}
@@ -148,69 +132,73 @@ export function ShopScreen({ careerHealth, careerEarnings, careerCredibility, it
             const isRandom = item.healthMin !== undefined && item.healthMax !== undefined;
             const used = itemUses[item.id] || 0;
             const usedUp = item.maxUses !== undefined && used >= item.maxUses;
-            // Random items can always be used (might lose HP), fixed items disabled when full
             const disabled = !canAfford || usedUp || (!isRandom && healthFull);
             const remaining = item.maxUses !== undefined ? item.maxUses - used : undefined;
+
+            // HP label
+            let hpLabel: string;
+            let hpColor: string;
+            if (isRandom) {
+              const { min, max } = getStemCellRange(used);
+              hpLabel = `${min} to +${max} HP`;
+              hpColor = max <= 40 ? '#aa4444' : '#cc88ff';
+            } else {
+              hpLabel = `+${item.healthBonus} HP`;
+              hpColor = '#44aa44';
+            }
+
+            // Status label
+            let statusText = '';
+            let statusColor = '#666';
+            if (usedUp) {
+              statusText = getDepletedQuip(item.id);
+              statusColor = '#aa4444';
+            } else if (remaining !== undefined) {
+              statusText = `${remaining} left`;
+              statusColor = remaining <= 2 ? '#aaaa44' : '#666';
+            } else if (isRandom) {
+              const { max } = getStemCellRange(used);
+              if (used === 0) { statusText = 'untested'; statusColor = '#cc88ff'; }
+              else if (max <= 20) { statusText = 'body rejecting'; statusColor = '#aa4444'; }
+              else if (max <= 60) { statusText = 'resistance building'; statusColor = '#aaaa44'; }
+              else { statusText = `#${used + 1}`; statusColor = '#cc88ff'; }
+            }
+
             return (
               <div key={item.id} style={{ ...styles.itemRow, opacity: disabled ? 0.4 : 1 }}>
-                <div style={styles.itemTop}>
+                {/* Row 1: Name and cost */}
+                <div style={styles.itemHeader}>
                   <span style={styles.itemName}>{item.name}</span>
                   <span style={styles.itemCost}>${item.cost.toLocaleString()}</span>
                 </div>
-                <div style={styles.itemBottom}>
-                  <span style={styles.itemDesc}>{item.description}</span>
-                  <div style={styles.itemEffects}>
-                    {isRandom ? (() => {
-                      const { min, max } = getStemCellRange(used);
-                      const risky = max <= 40;
-                      return <span style={{ color: risky ? '#aa4444' : '#cc88ff' }}>{min} to +{max}HP</span>;
-                    })() : (
-                      <span style={{ color: '#44aa44' }}>+{item.healthBonus}HP</span>
-                    )}
-                  </div>
+                {/* Row 2: Description */}
+                <div style={styles.itemDesc}>{item.description}</div>
+                {/* Row 3: HP bonus, status, buy button */}
+                <div style={styles.itemFooter}>
+                  <span style={{ color: hpColor, fontSize: '10px' }}>{hpLabel}</span>
+                  <span style={{ color: statusColor, fontSize: '8px', fontStyle: 'italic', flex: 1, textAlign: 'center' }}>
+                    {statusText}
+                  </span>
+                  <button
+                    style={{
+                      ...styles.buyBtn,
+                      cursor: disabled ? 'default' : 'pointer',
+                      borderColor: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
+                      color: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
+                    }}
+                    onClick={() => !disabled && handleBuy(item)}
+                    disabled={disabled}
+                  >
+                    BUY
+                  </button>
                 </div>
-                {/* Remaining uses indicator */}
-                <div style={styles.usesLabel}>
-                  {remaining !== undefined ? (
-                    usedUp ? (
-                      <span style={{ color: '#aa4444', fontSize: '6px' }}>
-                        {getDepletedQuip(item.id)}
-                      </span>
-                    ) : (
-                      <span style={{ color: remaining <= 2 ? '#aaaa44' : '#666' }}>
-                        {remaining} left
-                      </span>
-                    )
-                  ) : isRandom ? (() => {
-                    const { max } = getStemCellRange(used);
-                    if (used === 0) return <span style={{ color: '#cc88ff' }}>untested</span>;
-                    if (max <= 20) return <span style={{ color: '#aa4444', fontSize: '6px' }}>body rejecting</span>;
-                    if (max <= 60) return <span style={{ color: '#aaaa44' }}>resistance building</span>;
-                    return <span style={{ color: '#cc88ff' }}>#{used + 1}</span>;
-                  })() : (
-                    <span style={{ color: '#666' }}>∞</span>
-                  )}
-                </div>
-                <button
-                  style={{
-                    ...styles.buyBtn,
-                    cursor: disabled ? 'default' : 'pointer',
-                    borderColor: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
-                    color: disabled ? '#333' : isRandom ? '#cc88ff' : '#ee8833',
-                    animation: disabled ? 'none' : 'shopPulse 2.5s ease-in-out infinite',
-                  }}
-                  onClick={() => !disabled && handleBuy(item)}
-                  disabled={disabled}
-                >
-                  BUY
-                </button>
               </div>
             );
           })}
         </div>
 
         <button style={styles.skipBtn} onClick={onSkip}>
-          {purchased ? "LET'S DO THIS THING →" : 'TOUGH IT OUT →'}
+          {purchased ? "LET'S GO →" : 'TOUGH IT OUT →'}
         </button>
       </div>
     </div>
@@ -257,7 +245,7 @@ const styles: Record<string, React.CSSProperties> = {
   healthLabel: {
     display: 'flex',
     justifyContent: 'space-between',
-    fontSize: '8px',
+    fontSize: '9px',
     color: '#888',
     marginBottom: '4px',
   },
@@ -273,7 +261,7 @@ const styles: Record<string, React.CSSProperties> = {
   statsRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    fontSize: '9px',
+    fontSize: '10px',
     color: '#aaa',
     marginBottom: '14px',
     padding: '0 4px',
@@ -295,65 +283,48 @@ const styles: Record<string, React.CSSProperties> = {
   itemRow: {
     background: '#1a1a1a',
     border: '1px solid #333',
-    padding: '8px',
+    padding: '10px',
     textAlign: 'left',
-    position: 'relative',
   },
-  itemTop: {
+  itemHeader: {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: '4px',
-    paddingRight: '50px',
   },
   itemName: {
-    fontSize: '9px',
+    fontSize: '11px',
     color: '#ddd',
     fontWeight: 'bold',
   },
   itemCost: {
-    fontSize: '9px',
+    fontSize: '11px',
     color: '#FFD700',
   },
-  itemBottom: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
   itemDesc: {
-    fontSize: '7px',
+    fontSize: '8px',
     color: '#666',
     fontStyle: 'italic',
-    flex: 1,
-    paddingRight: '8px',
+    marginBottom: '6px',
   },
-  itemEffects: {
+  itemFooter: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px',
-    fontSize: '8px',
-    whiteSpace: 'nowrap',
-  },
-  usesLabel: {
-    position: 'absolute',
-    bottom: '6px',
-    right: '8px',
-    fontSize: '7px',
-    fontStyle: 'italic',
   },
   buyBtn: {
-    position: 'absolute',
-    top: '8px',
-    right: '8px',
     fontFamily: mono,
-    fontSize: '8px',
-    padding: '2px 8px',
+    fontSize: '10px',
+    padding: '4px 12px',
     background: 'transparent',
     border: '1px solid #ee8833',
     color: '#ee8833',
     cursor: 'pointer',
+    flexShrink: 0,
   },
   skipBtn: {
     fontFamily: mono,
-    fontSize: '11px',
+    fontSize: '12px',
     padding: '10px 18px',
     background: '#1a1a1a',
     color: '#888',
