@@ -85,7 +85,8 @@ function App() {
   const handleShopPurchase = useCallback((item: ShopItem) => {
     if (item.cost <= 0) return;
     setCareerEarnings((prev) => Math.max(0, prev - item.cost));
-    setCareerHealth((prev) => Math.max(0, Math.min(200, prev + item.healthBonus)));
+    // Stem cells can hurt but never kill — floor at 1 HP from shop purchases
+    setCareerHealth((prev) => Math.max(1, Math.min(200, prev + item.healthBonus)));
     setItemUses((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
   }, []);
 

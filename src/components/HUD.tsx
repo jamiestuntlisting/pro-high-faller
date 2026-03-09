@@ -35,13 +35,6 @@ export function HUD({ data, credibility }: Props) {
       {/* Timing hint */}
       {data.timingHint && <div style={styles.hint}>{data.timingHint}</div>}
 
-      {/* Controls hint */}
-      {data.phase === 'STANDING' && (
-        <div style={styles.controlHint}>[SPACE] to lean</div>
-      )}
-      {data.phase === 'LEANING' && (
-        <div style={styles.controlHint}>[SPACE] to jump!</div>
-      )}
     </div>
   );
 }
@@ -93,13 +86,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     fontWeight: 'bold',
     animation: 'blink 0.5s infinite',
-  },
-  controlHint: {
-    position: 'absolute',
-    bottom: '25%',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    color: '#666666',
-    fontSize: '10px',
   },
 };
