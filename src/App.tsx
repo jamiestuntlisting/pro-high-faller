@@ -145,7 +145,6 @@ function App() {
         <div style={styles.gameContainer}>
           <LandingResult
             result={landingResult}
-            careerEarnings={careerEarnings}
             careerCredibility={careerCredibility}
             careerHealth={careerHealth}
             onNextLevel={handleNextLevel}

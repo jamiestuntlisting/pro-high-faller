@@ -3,7 +3,6 @@ import type { LandingResult as LandingResultType } from '../types';
 
 interface Props {
   result: LandingResultType;
-  careerEarnings: number;
   careerCredibility: number;
   careerHealth: number;
   onNextLevel: () => void;
@@ -13,7 +12,6 @@ interface Props {
 
 export function LandingResult({
   result,
-  careerEarnings,
   careerCredibility,
   careerHealth,
   onNextLevel,
@@ -47,27 +45,7 @@ export function LandingResult({
           {result.grade}
         </h2>
 
-        <div style={styles.description}>{result.injuryDescription}</div>
-
-        {!passed && (
-          <div style={styles.failMessage}>
-            Tough break (pun intended). Think you can do another one?
-          </div>
-        )}
-
         <div style={styles.stats}>
-          {formatFlips(result.totalRotation) && (
-            <div style={styles.row}>
-              <span style={styles.statLabel}>ROTATION</span>
-              <span style={{ color: '#cc88ff' }}>{formatFlips(result.totalRotation)}</span>
-            </div>
-          )}
-          <div style={styles.row}>
-            <span style={styles.statLabel}>INJURY</span>
-            <span style={{ color: result.injuryPoints > 20 ? '#aa4444' : result.injuryPoints > 0 ? '#aaaa44' : '#55aa55' }}>
-              -{result.injuryPoints}
-            </span>
-          </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>PAY</span>
             <span style={{ color: result.pay > 0 ? '#FFD700' : '#666' }}>
@@ -76,23 +54,10 @@ export function LandingResult({
           </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>REPUTATION</span>
-            <span style={{ color: result.credibilityPoints > 0 ? '#55aa55' : result.credibilityPoints < 0 ? '#aa4444' : '#666' }}>
-              {result.credibilityPoints > 0 ? '+' : ''}{result.credibilityPoints}
-            </span>
-          </div>
-        </div>
-
-        <div style={styles.careerSection}>
-          <div style={styles.careerRow}>
-            <span style={styles.careerLabel}>Total Earnings:</span>
-            <span style={{ color: '#FFD700' }}>${careerEarnings.toLocaleString()}</span>
-          </div>
-          <div style={styles.careerRow}>
-            <span style={styles.careerLabel}>Reputation:</span>
             <span style={{ color: '#88CCFF' }}>{careerCredibility}</span>
           </div>
-          <div style={styles.careerRow}>
-            <span style={styles.careerLabel}>Health:</span>
+          <div style={styles.row}>
+            <span style={styles.statLabel}>HEALTH</span>
             <span style={{ color: careerHealth <= 40 ? '#aa4444' : careerHealth <= 100 ? '#aaaa44' : '#55aa55' }}>
               {careerHealth}/200
             </span>
@@ -119,25 +84,6 @@ export function LandingResult({
       </div>
     </div>
   );
-}
-
-function formatFlips(totalRotation: number): string {
-  const flipDegrees = Math.abs(totalRotation);
-  if (flipDegrees < 135) return ''; // less than half a flip
-  const quarters = Math.round(flipDegrees / 90);
-  const fullFlips = Math.floor(quarters / 4);
-  const remainder = quarters % 4;
-
-  if (fullFlips === 0) {
-    if (remainder === 1) return '1/4 flip';
-    if (remainder === 2) return '1/2 flip';
-    if (remainder === 3) return '3/4 flip';
-    return '';
-  }
-
-  if (remainder === 0) return `${fullFlips} flip${fullFlips > 1 ? 's' : ''}`;
-  const frac = remainder === 1 ? '1/4' : remainder === 2 ? '1/2' : '3/4';
-  return `${fullFlips} and ${frac} flips`;
 }
 
 function gradeColor(grade: string): string {
@@ -178,51 +124,24 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
   },
   grade: {
-    fontSize: '32px',
-    margin: '0 0 8px 0',
+    fontSize: '42px',
+    margin: '0 0 16px 0',
     fontFamily: mono,
-  },
-  description: {
-    fontSize: '10px',
-    color: '#999999',
-    marginBottom: '12px',
-    lineHeight: '1.6',
-  },
-  failMessage: {
-    fontSize: '10px',
-    color: '#aa6644',
-    marginBottom: '12px',
-    fontStyle: 'italic',
-    lineHeight: '1.6',
   },
   stats: {
     textAlign: 'left',
-    fontSize: '10px',
-    marginBottom: '12px',
+    fontSize: '16px',
+    marginBottom: '20px',
   },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '4px 0',
+    padding: '8px 0',
     borderBottom: '1px solid #222',
   },
   statLabel: {
     color: '#888',
-    letterSpacing: '1px',
-  },
-  careerSection: {
-    borderTop: '1px solid #333',
-    paddingTop: '10px',
-    marginBottom: '16px',
-    fontSize: '9px',
-  },
-  careerRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '3px 0',
-  },
-  careerLabel: {
-    color: '#555',
+    letterSpacing: '2px',
   },
   buttons: {
     display: 'flex',
@@ -231,8 +150,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   button: {
     fontFamily: mono,
-    fontSize: '10px',
-    padding: '8px 14px',
+    fontSize: '14px',
+    padding: '12px 20px',
     background: '#222',
     color: '#cccccc',
     border: '1px solid #444',
