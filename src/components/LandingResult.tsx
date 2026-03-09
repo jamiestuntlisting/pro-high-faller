@@ -3,6 +3,7 @@ import type { LandingResult as LandingResultType } from '../types';
 
 interface Props {
   result: LandingResultType;
+  careerEarnings: number;
   careerCredibility: number;
   careerHealth: number;
   onNextLevel: () => void;
@@ -12,6 +13,7 @@ interface Props {
 
 export function LandingResult({
   result,
+  careerEarnings,
   careerCredibility,
   careerHealth,
   onNextLevel,
@@ -48,18 +50,31 @@ export function LandingResult({
         <div style={styles.stats}>
           <div style={styles.row}>
             <span style={styles.statLabel}>PAY</span>
-            <span style={{ color: result.pay > 0 ? '#FFD700' : '#666' }}>
-              ${result.pay.toLocaleString()}
+            <span style={styles.values}>
+              <span style={{ color: result.pay > 0 ? '#55aa55' : '#666' }}>
+                {result.pay > 0 ? '+' : ''}${result.pay.toLocaleString()}
+              </span>
+              <span style={{ color: '#FFD700' }}>${careerEarnings.toLocaleString()}</span>
             </span>
           </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>REPUTATION</span>
-            <span style={{ color: '#88CCFF' }}>{careerCredibility}</span>
+            <span style={styles.values}>
+              <span style={{ color: result.credibilityPoints > 0 ? '#55aa55' : result.credibilityPoints < 0 ? '#aa4444' : '#666' }}>
+                {result.credibilityPoints > 0 ? '+' : ''}{result.credibilityPoints}
+              </span>
+              <span style={{ color: '#88CCFF' }}>{careerCredibility}</span>
+            </span>
           </div>
           <div style={styles.row}>
             <span style={styles.statLabel}>HEALTH</span>
-            <span style={{ color: careerHealth <= 40 ? '#aa4444' : careerHealth <= 100 ? '#aaaa44' : '#55aa55' }}>
-              {careerHealth}/200
+            <span style={styles.values}>
+              {result.injuryPoints > 0 && (
+                <span style={{ color: '#aa4444' }}>-{result.injuryPoints}</span>
+              )}
+              <span style={{ color: careerHealth <= 40 ? '#aa4444' : careerHealth <= 100 ? '#aaaa44' : '#55aa55' }}>
+                {careerHealth}/200
+              </span>
             </span>
           </div>
         </div>
@@ -142,6 +157,11 @@ const styles: Record<string, React.CSSProperties> = {
   statLabel: {
     color: '#888',
     letterSpacing: '2px',
+  },
+  values: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
   },
   buttons: {
     display: 'flex',
