@@ -229,9 +229,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gameContainer: {
     position: 'relative',
-    width: '100%',
-    maxWidth: '768px',
-    margin: '0 auto',
+    width: '100vw',
+    height: '100dvh',
+    overflow: 'hidden',
   },
 };
 
