@@ -9,6 +9,7 @@ import { RetirementScreen } from './components/RetirementScreen';
 import { NoWorkScreen } from './components/NoWorkScreen';
 import { ShopScreen, type ShopItem } from './components/ShopScreen';
 import { DrugOfferScreen } from './components/DrugOfferScreen';
+import { unlockAudio } from './engine/SoundFX';
 
 type Screen = 'briefing' | 'playing' | 'result' | 'shop' | 'retired' | 'no_work' | 'drug_offer';
 
@@ -42,6 +43,7 @@ function App() {
   const level = getLevel(currentLevel);
 
   const handleStart = useCallback(() => {
+    unlockAudio(); // Unlock Web Audio on first user gesture (mobile requirement)
     setHudData(null);
     setLandingResult(null);
     // Level 35 drug dealer offer (before playing)

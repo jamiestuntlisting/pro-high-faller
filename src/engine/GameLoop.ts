@@ -7,7 +7,7 @@ import { createGameState } from './GameState';
 import { transition } from './StateMachine';
 import * as Physics from './Physics';
 import * as LandingScorer from './LandingScorer';
-import { playThump } from './SoundFX';
+import { playThump, playCushionImpact, playSplash } from './SoundFX';
 
 const PHYSICS_FPS = 60;
 const PHYSICS_DT = 1000 / PHYSICS_FPS;
@@ -169,9 +169,13 @@ export class GameLoop {
         this.landingFrames = 0;
         this.landingDone = false;
 
-        // Thump sound when faller misses the target
+        // Landing sound — different based on what they hit
         if (result.horizontalAccuracy <= 0) {
-          playThump();
+          playThump(); // Missed — hard ground impact
+        } else if (this.state.level.targetType === 'water') {
+          playSplash(); // Hit water
+        } else {
+          playCushionImpact(); // Hit airbag/boxes
         }
 
         // Update crew callout with landing feedback
