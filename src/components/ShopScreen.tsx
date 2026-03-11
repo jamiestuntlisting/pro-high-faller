@@ -10,6 +10,7 @@ export interface ShopItem {
   description: string;
   maxUses?: number;     // Lifetime uses per career (undefined = unlimited)
   unlockLevel: number;  // Level at which item becomes visible in shop
+  repPenalty?: number;   // Credibility penalty when purchased (negative number)
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -24,7 +25,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'chiro',     name: 'CHIROPRACTOR',         cost: 350,  healthBonus: 110, maxUses: 4,  unlockLevel: 3,  description: 'That crack was satisfying.' },
   { id: 'cortisone', name: 'CORTISONE SHOT',       cost: 200,  healthBonus: 50,  maxUses: 5,  unlockLevel: 5,  description: "The doc says it's fine. Probably." },
   { id: 'pt',        name: 'PHYSICAL THERAPY',     cost: 500,  healthBonus: 200, maxUses: 3,  unlockLevel: 7,  description: 'Doing it the right way.' },
-  { id: 'stemcell',  name: 'STEM CELL TREATMENT',  cost: 3000, healthBonus: 0,   healthMin: -10, healthMax: 120, unlockLevel: 10, description: 'Cutting edge. Results may vary... wildly.' },
+  { id: 'stemcell',  name: 'STEM CELL TREATMENT',  cost: 3000, healthBonus: 0,   healthMin: -10, healthMax: 120, unlockLevel: 10, description: 'Cutting edge. Results may vary... wildly.', repPenalty: -5 },
 ];
 
 /** Stem cells degrade with each use — initially great, then body starts rejecting */
@@ -183,6 +184,9 @@ export function ShopScreen({ currentLevel, careerHealth, careerEarnings, careerC
                 {/* Row 3: HP bonus, status, buy button */}
                 <div style={styles.itemFooter}>
                   <span style={{ color: hpColor, fontSize: '10px' }}>{hpLabel}</span>
+                  {item.repPenalty && (
+                    <span style={{ color: '#aa4444', fontSize: '9px' }}>{item.repPenalty} CRED</span>
+                  )}
                   <span style={{ color: statusColor, fontSize: '8px', fontStyle: 'italic', flex: 1, textAlign: 'center' }}>
                     {statusText}
                   </span>

@@ -38,6 +38,7 @@ export interface LevelConfig {
   pay: number;             // Base pay for the job
   coordinatorLine: string; // Briefing dialogue
   jumpType?: JumpType;     // Where the performer jumps from (default: 'building')
+  parachute?: boolean;     // Slow fall with parachute canopy
 }
 
 // === COUNTDOWN ===
@@ -81,6 +82,7 @@ export interface GameState {
   crewCallout: string | null;
   backFall: boolean;         // 20% chance: performer faces backwards, falls face-up
   bouncy: boolean;           // sumo costume: bounces off ground on miss
+  drugged: boolean;          // took percocet on level 35 — wild uncontrollable movement
   // Landing animation
   landedTime: number;       // Seconds since landing (for splash/settle animation)
   // Previous frame (for interpolation)

@@ -109,8 +109,14 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
 
     case 'FALLING':
       state.elapsedTime += dt;
-      // Real gravity — no scaling
-      f.vy = Math.min(f.vy + PHYSICS.GRAVITY * dt, PHYSICS.TERMINAL_VELOCITY);
+
+      // Parachute: reduced gravity and terminal velocity, more drift
+      const isParachute = state.level.parachute === true;
+      const gravity = isParachute ? PHYSICS.GRAVITY * 0.25 : PHYSICS.GRAVITY;
+      const termV = isParachute ? 30 : PHYSICS.TERMINAL_VELOCITY;
+      const drag = isParachute ? 0.995 : PHYSICS.AIR_DRAG;
+
+      f.vy = Math.min(f.vy + gravity * dt, termV);
       f.y -= f.vy * dt;
 
       if (f.verticalJump) {
@@ -126,8 +132,13 @@ export function update(state: GameState, dt: number, _input: InputSnapshot): voi
         applyRotation(f, dt);
         applyWind(f, dt, state);
 
-        // Horizontal movement: jump momentum persists with light air drag
-        f.vx *= PHYSICS.AIR_DRAG;
+        // Drugged: random jerky movement, uncontrollable body
+        if (state.drugged) {
+          applyDruggedEffects(f, state.elapsedTime, dt);
+        }
+
+        // Horizontal movement: jump momentum persists with air drag
+        f.vx *= drag;
         f.x += f.vx * dt;
 
         // Land on top of the landing zone if over it, otherwise on the ground
@@ -221,4 +232,27 @@ function getLandingHeight(f: FallerState, state: GameState): number {
     return matHeightFt; // land on top of catcher (including water surface)
   }
   return 0;
+}
+
+/**
+ * Drugged: percocet makes the body jerk randomly.
+ * Angular velocity spikes, random horizontal nudges, tuck/spread unreliable.
+ */
+function applyDruggedEffects(f: FallerState, elapsed: number, dt: number): void {
+  // Every ~0.3s: random angular velocity spike
+  const pulse = Math.floor(elapsed / 0.3);
+  const pulsePhase = elapsed - pulse * 0.3;
+  if (pulsePhase < dt) {
+    // Spike: add or subtract a big chunk of angular velocity
+    const spike = (Math.random() - 0.5) * 300;
+    f.angularVelocity += spike;
+  }
+
+  // Random horizontal nudges
+  f.vx += (Math.random() - 0.5) * 40 * dt;
+
+  // Tuck/spread controls unreliable: randomly force or deny tuck
+  if (Math.random() < 0.3) {
+    f.isTucked = !f.isTucked;
+  }
 }

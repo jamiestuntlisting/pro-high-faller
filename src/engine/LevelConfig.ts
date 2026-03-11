@@ -323,43 +323,50 @@ export const LEVELS: LevelConfig[] = [
     idealAngle: 0, wind: -9, windGust: 3, showTimingHints: false, pay: 23000, jumpType: 'balloon',
     coordinatorLine: "230 feet from the balloon. Narrow water target. Wind is vicious. Feet. First.",
   },
+  // --- PARACHUTE LEVEL ---
   {
-    level: 33, production: 'Valor', height: 240, targetType: 'airbag', targetSize: 12,
+    level: 33, production: 'Silk & Gravity', height: 280, targetType: 'airbag', targetSize: 14,
+    idealAngle: 90, wind: 6, windGust: 2, showTimingHints: false, pay: 25000, jumpType: 'helicopter',
+    parachute: true,
+    coordinatorLine: "280 feet with a chute. You'll fall slow but drift like crazy. Good luck aiming.",
+  },
+  {
+    level: 34, production: 'Valor', height: 240, targetType: 'airbag', targetSize: 12,
     idealAngle: 90, wind: 9, windGust: 3, showTimingHints: false, pay: 25000, jumpType: 'helicopter',
     coordinatorLine: "240 feet from the helicopter. Small bag. You've done this before. Just... higher.",
   },
   {
-    level: 34, production: 'Final Floor', height: 250, targetType: 'boxes', targetSize: 10,
+    level: 35, production: 'Final Floor', height: 250, targetType: 'boxes', targetSize: 10,
     idealAngle: 90, wind: -10, windGust: 3, showTimingHints: false, pay: 27000,
     coordinatorLine: "250-foot skyscraper. Boxes the size of a phone booth. Extreme wind. You sure?",
   },
   {
-    level: 35, production: 'Cloudbreak', height: 260, targetType: 'water', targetSize: 14,
+    level: 36, production: 'Cloudbreak', height: 260, targetType: 'water', targetSize: 14,
     idealAngle: 0, wind: 9, windGust: 3, showTimingHints: false, pay: 28000, jumpType: 'balloon',
     coordinatorLine: "260 feet from the balloon into a narrow channel. Wind is extreme.",
   },
   {
-    level: 36, production: 'Apex', height: 270, targetType: 'airbag', targetSize: 11,
+    level: 37, production: 'Apex', height: 270, targetType: 'airbag', targetSize: 11,
     idealAngle: 90, wind: -10, windGust: 4, showTimingHints: false, pay: 30000, jumpType: 'helicopter',
     coordinatorLine: "270 feet. Tiny bag. Hurricane-force wind. Only one person has ever done this.",
   },
   {
-    level: 37, production: 'Condemned II', height: 280, targetType: 'boxes', targetSize: 10,
+    level: 38, production: 'Condemned II', height: 280, targetType: 'boxes', targetSize: 10,
     idealAngle: 90, wind: 10, windGust: 4, showTimingHints: false, pay: 32000,
     coordinatorLine: "280 feet. The box stack is barely there. If you miss, there is no second take.",
   },
   {
-    level: 38, production: 'Into The Deep', height: 290, targetType: 'water', targetSize: 13,
+    level: 39, production: 'Into The Deep', height: 290, targetType: 'water', targetSize: 13,
     idealAngle: 0, wind: -10, windGust: 4, showTimingHints: false, pay: 35000, jumpType: 'balloon',
     coordinatorLine: "290 feet. Narrow water. Gusts are unpredictable. This is not sane.",
   },
   {
-    level: 39, production: 'Terminal Velocity', height: 300, targetType: 'airbag', targetSize: 10,
+    level: 40, production: 'Terminal Velocity', height: 300, targetType: 'airbag', targetSize: 10,
     idealAngle: 90, wind: 10, windGust: 4, showTimingHints: false, pay: 40000, jumpType: 'helicopter',
     coordinatorLine: "300 feet from the chopper. The bag looks like a postage stamp. Terminal velocity.",
   },
   {
-    level: 40, production: 'The Immortal Gag', height: 320, targetType: 'airbag', targetSize: 10,
+    level: 41, production: 'The Immortal Gag', height: 320, targetType: 'airbag', targetSize: 10,
     idealAngle: 90, wind: -10, windGust: 5, showTimingHints: false, pay: 50000, jumpType: 'balloon',
     coordinatorLine: "320 feet from a balloon. Postage-stamp bag. Gale-force gusts. If you survive, you're a god.",
   },
@@ -386,3 +393,6 @@ export function getLevel(levelNum: number): LevelConfig {
   const idx = Math.min(levelNum - 1, LEVELS.length - 1);
   return LEVELS[Math.max(0, idx)];
 }
+
+/** Total number of career levels (excluding secret level 100) */
+export const MAX_LEVEL = 41;

@@ -8,8 +8,9 @@ import { StartScreen } from './components/StartScreen';
 import { RetirementScreen } from './components/RetirementScreen';
 import { NoWorkScreen } from './components/NoWorkScreen';
 import { ShopScreen, type ShopItem } from './components/ShopScreen';
+import { DrugOfferScreen } from './components/DrugOfferScreen';
 
-type Screen = 'briefing' | 'playing' | 'result' | 'shop' | 'retired' | 'no_work';
+type Screen = 'briefing' | 'playing' | 'result' | 'shop' | 'retired' | 'no_work' | 'drug_offer';
 
 function getStartLevel(): number {
   const params = new URLSearchParams(window.location.search);
@@ -35,13 +36,22 @@ function App() {
   // After the shop, should we advance to the next level or retry?
   const [afterShop, setAfterShop] = useState<'next' | 'retry'>('next');
 
+  // Drug dealer state
+  const [drugged, setDrugged] = useState(false);
+
   const level = getLevel(currentLevel);
 
   const handleStart = useCallback(() => {
     setHudData(null);
     setLandingResult(null);
+    // Level 35 drug dealer offer (before playing)
+    if (currentLevel === 35) {
+      setScreen('drug_offer');
+      return;
+    }
+    setDrugged(false);
     setScreen('playing');
-  }, []);
+  }, [currentLevel]);
 
   const handleHudUpdate = useCallback((snapshot: HudSnapshot) => {
     setHudData(snapshot);
@@ -73,7 +83,7 @@ function App() {
       setScreen('no_work');
       return;
     }
-    setCurrentLevel((prev) => prev === 40 ? 100 : prev + 1);
+    setCurrentLevel((prev) => prev === 41 ? 100 : prev + 1);
     setScreen('briefing');
   }, [careerHealth, careerCredibility, jobsCompleted]);
 
@@ -88,11 +98,15 @@ function App() {
     // Stem cells can hurt but never kill — floor at 1 HP from shop purchases
     setCareerHealth((prev) => Math.max(1, Math.min(200, prev + item.healthBonus)));
     setItemUses((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
+    // Rep penalty (e.g. stem cells)
+    if (item.repPenalty) {
+      setCareerCredibility((prev) => Math.max(0, prev + item.repPenalty!));
+    }
   }, []);
 
   const handleShopDone = useCallback(() => {
     if (afterShop === 'next') {
-      setCurrentLevel((prev) => prev === 40 ? 100 : prev + 1);
+      setCurrentLevel((prev) => prev === 41 ? 100 : prev + 1);
     }
     setScreen('briefing');
   }, [afterShop]);
@@ -100,6 +114,17 @@ function App() {
   const handleRetry = useCallback(() => {
     setHudData(null);
     setLandingResult(null);
+    setScreen('playing');
+  }, []);
+
+  const handleDrugAccept = useCallback(() => {
+    setDrugged(true);
+    setCareerCredibility((prev) => Math.max(0, prev - 10));
+    setScreen('playing');
+  }, []);
+
+  const handleDrugDecline = useCallback(() => {
+    setDrugged(false);
     setScreen('playing');
   }, []);
 
@@ -131,6 +156,7 @@ function App() {
             careerHealth={careerHealth}
             careerEarnings={careerEarnings}
             jobsCompleted={jobsCompleted}
+            drugged={drugged}
             onHudUpdate={handleHudUpdate}
             onLanding={handleLanding}
           />
@@ -161,6 +187,13 @@ function App() {
           itemUses={itemUses}
           onPurchase={handleShopPurchase}
           onSkip={handleShopDone}
+        />
+      )}
+
+      {screen === 'drug_offer' && (
+        <DrugOfferScreen
+          onAccept={handleDrugAccept}
+          onDecline={handleDrugDecline}
         />
       )}
 

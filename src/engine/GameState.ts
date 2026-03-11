@@ -158,7 +158,7 @@ function generateCountdown(): CountdownState {
   };
 }
 
-export function createGameState(level: LevelConfig): GameState {
+export function createGameState(level: LevelConfig, drugged = false): GameState {
   // Calculate if intro pan is needed (building taller than viewport)
   const groundY = RENDER.GROUND_Y;
   const buildingTopY = groundY - level.height * PIXELS_PER_FOOT;
@@ -195,6 +195,7 @@ export function createGameState(level: LevelConfig): GameState {
     crewCallout: null,
     backFall: Math.random() < 0.2,
     bouncy: isCostumeBouncyForLevel(level.level),
+    drugged,
     landedTime: 0,
     prevX: 0,
     prevY: level.height,

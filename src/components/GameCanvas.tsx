@@ -8,6 +8,7 @@ interface Props {
   careerHealth: number;
   careerEarnings: number;
   jobsCompleted: number;
+  drugged?: boolean;
   onHudUpdate: (snapshot: HudSnapshot) => void;
   onLanding: (result: LandingResult) => void;
 }
@@ -17,6 +18,7 @@ export function GameCanvas({
   careerHealth,
   careerEarnings,
   jobsCompleted,
+  drugged = false,
   onHudUpdate,
   onLanding,
 }: Props) {
@@ -29,7 +31,7 @@ export function GameCanvas({
     canvas.width = GAME_WIDTH;
     canvas.height = GAME_HEIGHT;
 
-    const loop = new GameLoop(canvas, level, onHudUpdate, onLanding);
+    const loop = new GameLoop(canvas, level, onHudUpdate, onLanding, drugged);
     loop.setCareerStats(careerHealth, careerEarnings, jobsCompleted);
     loop.start();
 

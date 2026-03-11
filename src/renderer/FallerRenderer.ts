@@ -1,5 +1,5 @@
 import type { FallerPhase, TargetType } from '../types';
-import { RENDER } from '../constants';
+import { RENDER, RENDER_SCALE } from '../constants';
 
 // ========================================================
 //  COSTUME SYSTEM — per-level outfits
@@ -104,9 +104,11 @@ export function draw(
   targetType: TargetType = 'airbag',
   landedTime = 0,
   backFall = false,
+  parachute = false,
 ): void {
   ctx.save();
   ctx.translate(x, y);
+  ctx.scale(RENDER_SCALE, RENDER_SCALE);
 
   // Dark outline glow for separation from background
   ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
@@ -151,6 +153,11 @@ export function draw(
       drawHat(ctx, headCY, headR, costume.hat, phase, jumpTimer + fallTime);
     }
     ctx.restore(); // undo rotation, back to translated-only space
+
+    // Parachute canopy (FALLING phase only)
+    if (parachute && phase === 'FALLING') {
+      drawParachute(ctx, fallTime);
+    }
 
     // Hat flying off (JUMPING/FALLING) — drawn in world space so it doesn't orbit
     if (costume.hat && (phase === 'JUMPING' || phase === 'FALLING')) {
@@ -673,6 +680,58 @@ function drawFallingEggs(
 }
 
 // ========================================================
+//  PARACHUTE CANOPY
+// ========================================================
+
+function drawParachute(
+  ctx: CanvasRenderingContext2D,
+  fallTime: number,
+): void {
+  // Canopy above faller — drawn in world space (not rotated with body)
+  const canopyW = 30;
+  const canopyH = 16;
+  const canopyY = -50; // above the faller
+  const sway = Math.sin(fallTime * 1.5) * 3;
+
+  // Deploy animation — canopy expands in the first second
+  const deploy = Math.min(fallTime * 2, 1);
+  const w = canopyW * deploy;
+  const h = canopyH * deploy;
+
+  // Canopy dome
+  ctx.fillStyle = 'rgba(200, 80, 60, 0.7)';
+  ctx.beginPath();
+  ctx.moveTo(-w / 2 + sway, canopyY + h);
+  ctx.quadraticCurveTo(-w / 2 + sway - 2, canopyY - h * 0.2, sway, canopyY);
+  ctx.quadraticCurveTo(w / 2 + sway + 2, canopyY - h * 0.2, w / 2 + sway, canopyY + h);
+  ctx.closePath();
+  ctx.fill();
+
+  // Canopy outline
+  ctx.strokeStyle = '#993322';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2 + sway, canopyY + h);
+  ctx.quadraticCurveTo(-w / 2 + sway - 2, canopyY - h * 0.2, sway, canopyY);
+  ctx.quadraticCurveTo(w / 2 + sway + 2, canopyY - h * 0.2, w / 2 + sway, canopyY + h);
+  ctx.stroke();
+
+  // Rigging lines from canopy to shoulders
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = 0.5;
+  const shoulderY = -10; // approximate shoulder position
+  for (let i = 0; i < 4; i++) {
+    const t = i / 3;
+    const lineX = (-w / 2 + w * t) + sway;
+    const lineY = canopyY + h;
+    ctx.beginPath();
+    ctx.moveTo(lineX, lineY);
+    ctx.lineTo(i < 2 ? -2 : 2, shoulderY);
+    ctx.stroke();
+  }
+}
+
+// ========================================================
 //  HAT
 // ========================================================
 
@@ -1130,6 +1189,9 @@ export function drawCameraCrew(
   const baseX = crewX + crewOffset;
 
   ctx.save();
+  ctx.translate(baseX, groundY);
+  ctx.scale(RENDER_SCALE, RENDER_SCALE);
+  ctx.translate(-baseX, -groundY);
   ctx.lineCap = 'round';
 
   // === CAMERA ON TRIPOD ===

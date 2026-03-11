@@ -1,9 +1,12 @@
 // === DISPLAY ===
 export const GAME_WIDTH = 320;
-export const GAME_HEIGHT = 320;
+export const GAME_HEIGHT = 694;  // Tall portrait for iPhone 17 Pro Max (2868x1320 → ~2.17:1)
 
 // Scale: a 6ft person is ~24px tall on screen → 4 px per foot
 export const PIXELS_PER_FOOT = 4;
+
+// Character/environment render scale — makes people bigger on the taller viewport
+export const RENDER_SCALE = 1.4;
 
 // === PHYSICS (all units in feet and seconds) ===
 export const PHYSICS = {
@@ -37,7 +40,7 @@ export const SCORING = {
 
 // === RENDERING ===
 export const RENDER = {
-  GROUND_Y: GAME_HEIGHT - 14,
+  GROUND_Y: GAME_HEIGHT - 20,
   SKY_COLOR: '#0a0a0a',
   GROUND_COLOR: '#111111',
   ASCII_DIM: '#2a2a2a',

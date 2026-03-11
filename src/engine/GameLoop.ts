@@ -31,8 +31,9 @@ export class GameLoop {
     level: LevelConfig,
     onHudUpdate: (snapshot: HudSnapshot) => void,
     onLanding: (result: LandingResult) => void,
+    drugged = false,
   ) {
-    this.state = createGameState(level);
+    this.state = createGameState(level, drugged);
     this.renderer = new CanvasRenderer(canvas);
     this.input = new InputManager();
     this.onHudUpdate = onHudUpdate;
