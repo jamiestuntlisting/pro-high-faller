@@ -46,16 +46,11 @@ export function GameCanvas({
     <canvas
       ref={canvasRef}
       style={{
-        width: 'auto',
-        height: 'calc(100dvh - 4px)',
-        maxWidth: '100%',
+        width: '100%',
+        height: '100dvh',
         imageRendering: 'pixelated',
-        aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
         display: 'block',
-        margin: '0 auto',
-        border: '2px solid #333',
         touchAction: 'none',
-        boxSizing: 'border-box',
       }}
     />
   );
