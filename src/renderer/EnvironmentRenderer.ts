@@ -195,9 +195,11 @@ export function draw(
     ctx.fillText('-', gx, groundY);
   }
 
-  // === STRUCTURE (building, helicopter, or balloon) ===
+  // === STRUCTURE (building, helicopter, balloon, or spaceship) ===
   const jumpType = level.jumpType || 'building';
-  if (jumpType === 'helicopter') {
+  if (jumpType === 'spaceship') {
+    drawSpaceship(ctx, buildingEdgeX, buildingTopY);
+  } else if (jumpType === 'helicopter') {
     drawHelicopter(ctx, buildingEdgeX, buildingTopY);
   } else if (jumpType === 'balloon') {
     drawBalloon(ctx, buildingEdgeX, buildingTopY);
@@ -697,6 +699,83 @@ function drawBuilding(
   // Corner
   ctx.fillStyle = RENDER.ASCII_WHITE;
   ctx.fillText(']', edgeX - cw, topY);
+}
+
+function drawSpaceship(
+  ctx: CanvasRenderingContext2D,
+  edgeX: number,
+  topY: number,
+): void {
+  // Spaceship — orbiting craft, performer jumps from airlock
+  const cx = edgeX - 15;
+  const cy = topY - 30;
+  const s = 3;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  // Main hull — elongated oval
+  ctx.fillStyle = '#888899';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 20 * s, 8 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hull outline
+  ctx.strokeStyle = '#aaaabb';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 20 * s, 8 * s, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Cockpit window dome
+  ctx.fillStyle = '#334466';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 5 * s, 8 * s, 4 * s, 0, Math.PI, 0);
+  ctx.fill();
+  // Window reflection
+  ctx.strokeStyle = '#5577aa';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.ellipse(cx - 2 * s, cy - 6 * s, 3 * s, 1.5 * s, -0.2, Math.PI, 0);
+  ctx.stroke();
+
+  // Airlock door (open) — where performer jumps from
+  ctx.fillStyle = '#222233';
+  ctx.fillRect(cx + 12 * s, cy - 2 * s, 4 * s, 6 * s);
+  // Airlock frame
+  ctx.strokeStyle = '#aaaa44';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(cx + 12 * s, cy - 2 * s, 4 * s, 6 * s);
+
+  // Engine glow — left side
+  ctx.fillStyle = 'rgba(80, 140, 255, 0.5)';
+  ctx.beginPath();
+  ctx.moveTo(cx - 20 * s, cy - 2 * s);
+  ctx.lineTo(cx - 26 * s, cy);
+  ctx.lineTo(cx - 20 * s, cy + 2 * s);
+  ctx.closePath();
+  ctx.fill();
+
+  // Small thruster glow — right side
+  ctx.fillStyle = 'rgba(80, 140, 255, 0.3)';
+  ctx.beginPath();
+  ctx.moveTo(cx + 20 * s, cy + 2 * s);
+  ctx.lineTo(cx + 22 * s, cy + 4 * s);
+  ctx.lineTo(cx + 18 * s, cy + 4 * s);
+  ctx.closePath();
+  ctx.fill();
+
+  // Hull panel lines
+  ctx.strokeStyle = '#777788';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 10 * s, cy - 7 * s);
+  ctx.lineTo(cx - 10 * s, cy + 7 * s);
+  ctx.moveTo(cx + 5 * s, cy - 7.5 * s);
+  ctx.lineTo(cx + 5 * s, cy + 7.5 * s);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function drawHelicopter(

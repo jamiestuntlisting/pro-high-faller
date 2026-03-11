@@ -23,7 +23,7 @@ export interface FallerState {
 // === LEVEL CONFIG ===
 
 export type TargetType = 'airbag' | 'boxes' | 'water';
-export type JumpType = 'building' | 'helicopter' | 'balloon';
+export type JumpType = 'building' | 'helicopter' | 'balloon' | 'spaceship';
 
 export interface LevelConfig {
   level: number;

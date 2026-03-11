@@ -372,20 +372,20 @@ export const LEVELS: LevelConfig[] = [
   },
 ];
 
-/** Secret level 100 — unlocked after beating all 40 levels */
+/** Secret level 100 — only accessible via direct link (?level=100) */
 const LEVEL_100: LevelConfig = {
   level: 100,
-  production: "The Stuntman's Requiem",
-  height: 1000,
+  production: 'Re-Entry',
+  height: 7000,
   targetType: 'airbag',
-  targetSize: 8,
+  targetSize: 6,
   idealAngle: 90,
-  wind: 10,
-  windGust: 5,
+  wind: 14,
+  windGust: 8,
   showTimingHints: false,
-  pay: 1000000,
-  jumpType: 'balloon',
-  coordinatorLine: "A thousand feet. Nobody has ever survived this. Nobody ever will. But they'll remember your name.",
+  pay: 10000000,
+  jumpType: 'spaceship',
+  coordinatorLine: "Seven thousand feet. From orbit. The airbag looks like a postage stamp from up here. You've got about sixty seconds to think about your life choices.",
 };
 
 export function getLevel(levelNum: number): LevelConfig {

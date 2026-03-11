@@ -83,7 +83,7 @@ function App() {
       setScreen('no_work');
       return;
     }
-    setCurrentLevel((prev) => prev === 41 ? 100 : prev + 1);
+    setCurrentLevel((prev) => prev + 1);
     setScreen('briefing');
   }, [careerHealth, careerCredibility, jobsCompleted]);
 
@@ -106,7 +106,7 @@ function App() {
 
   const handleShopDone = useCallback(() => {
     if (afterShop === 'next') {
-      setCurrentLevel((prev) => prev === 41 ? 100 : prev + 1);
+      setCurrentLevel((prev) => prev + 1);
     }
     setScreen('briefing');
   }, [afterShop]);
