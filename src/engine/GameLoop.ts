@@ -7,6 +7,7 @@ import { createGameState } from './GameState';
 import { transition } from './StateMachine';
 import * as Physics from './Physics';
 import * as LandingScorer from './LandingScorer';
+import { playThump } from './SoundFX';
 
 const PHYSICS_FPS = 60;
 const PHYSICS_DT = 1000 / PHYSICS_FPS;
@@ -167,6 +168,12 @@ export class GameLoop {
         this.state.landing = result;
         this.landingFrames = 0;
         this.landingDone = false;
+
+        // Thump sound when faller misses the target
+        if (result.horizontalAccuracy <= 0) {
+          playThump();
+        }
+
         // Update crew callout with landing feedback
         this.updateCrewText();
         // Immediately push a HUD update

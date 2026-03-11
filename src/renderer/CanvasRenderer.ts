@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { GAME_WIDTH, GAME_HEIGHT, PIXELS_PER_FOOT, CAMERA_CREW_OFFSET, naturalLandingDistance, landingZoneHeight } from '../constants';
+import { GAME_WIDTH, GAME_HEIGHT, PIXELS_PER_FOOT, RENDER_SCALE, CAMERA_CREW_OFFSET, naturalLandingDistance, landingZoneHeight } from '../constants';
 import * as FallerRenderer from './FallerRenderer';
 import * as EnvironmentRenderer from './EnvironmentRenderer';
 import { getLayout, getSkyTopColor } from './EnvironmentRenderer';
@@ -38,7 +38,9 @@ export class CanvasRenderer {
     let pivotAtFeet = false;
 
     if (f.phase === 'STANDING' || f.phase === 'LEANING') {
-      screenX = layout.buildingEdgeX;
+      // Position faller ON the building, not past the edge
+      // Body is ~14px wide at RENDER_SCALE, center needs to be left of edge
+      screenX = layout.buildingEdgeX - 8 * RENDER_SCALE;
       // Nudge faller down so feet visually rest ON the rooftop glyph, not above it
       fallerWorldY = layout.buildingTopY + 4;
       pivotAtFeet = true;
