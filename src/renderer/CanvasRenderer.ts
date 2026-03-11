@@ -39,7 +39,8 @@ export class CanvasRenderer {
 
     if (f.phase === 'STANDING' || f.phase === 'LEANING') {
       screenX = layout.buildingEdgeX;
-      fallerWorldY = layout.buildingTopY;
+      // Nudge faller down so feet visually rest ON the rooftop glyph, not above it
+      fallerWorldY = layout.buildingTopY + 4;
       pivotAtFeet = true;
     } else {
       fallerWorldY = layout.groundY - interpY * PIXELS_PER_FOOT;
@@ -296,13 +297,12 @@ export class CanvasRenderer {
     const viewBottom = viewY + GAME_HEIGHT;
 
     // Wind appearance — streaks that contrast with background
-    // Bright against dark themes, carries debris for story flavor
+    // Bright against dark themes, dark against light themes
     const theme = EnvironmentRenderer.getTheme(level);
     const skyBrightness = theme.skyStops[0][1]; // top sky color
-    // If sky is dark (typical), use bright wind; if light, use dark wind
     const isDark = skyBrightness.startsWith('#0') || skyBrightness.startsWith('#1') || skyBrightness.startsWith('#2');
-    const windColor = isDark ? 'rgba(200, 220, 255, 0.5)' : 'rgba(40, 30, 20, 0.4)';
-    const streakLen = Math.min(Math.abs(wind) * 2, 16);
+    const windColor = isDark ? 'rgba(200, 220, 255, 0.8)' : 'rgba(20, 15, 10, 0.7)';
+    const streakLen = Math.min(Math.abs(wind) * 3, 24);
 
     for (const p of particles) {
       // Move horizontally by wind
@@ -324,7 +324,7 @@ export class CanvasRenderer {
       if (p.y >= viewTop && p.y <= groundY) {
         // Draw as directional streaks, not dots
         ctx.strokeStyle = windColor;
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x + (speed > 0 ? streakLen : -streakLen), p.y + Math.sin(p.phase) * 1.5);

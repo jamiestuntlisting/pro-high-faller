@@ -20,10 +20,10 @@ export function HUD({ data, credibility }: Props) {
         <span style={styles.dim}>HT:</span> {Math.round(data.height)}ft
       </div>
 
-      {/* Bottom-left: wind */}
+      {/* Top-center: wind */}
       {data.wind !== 0 && (
-        <div style={styles.botLeft}>
-          <span style={styles.dim}>WIND:</span> {data.wind > 0 ? '>>>' : '<<<'}{Math.abs(data.wind)}
+        <div style={styles.topCenter}>
+          {data.wind > 0 ? '→' : '←'} <span style={styles.dim}>WIND</span> {Math.abs(data.wind)}
         </div>
       )}
 
@@ -67,10 +67,12 @@ const styles: Record<string, React.CSSProperties> = {
     top: '4px',
     right: '6px',
   },
-  botLeft: {
+  topCenter: {
     position: 'absolute',
-    bottom: '4px',
-    left: '6px',
+    top: '4px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    fontSize: '11px',
   },
   botRight: {
     position: 'absolute',

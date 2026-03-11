@@ -1,8 +1,8 @@
 import type { LevelConfig } from '../types';
 import { GAME_WIDTH, GAME_HEIGHT, RENDER, PIXELS_PER_FOOT, RENDER_SCALE, naturalLandingDistance, landingZoneHeight } from '../constants';
 
-/** Building width in pixels — left side of screen, scaled for taller viewport */
-export const BUILDING_WIDTH_PX = Math.round(55 * RENDER_SCALE);
+/** Building width in pixels — narrow to maximize fall/landing area */
+export const BUILDING_WIDTH_PX = Math.round(30 * RENDER_SCALE);
 
 // ========================================================
 //  BACKGROUND THEMES — vivid sky gradients + silhouettes
