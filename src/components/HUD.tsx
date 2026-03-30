@@ -2,10 +2,9 @@ import type { HudSnapshot } from '../types';
 
 interface Props {
   data: HudSnapshot | null;
-  credibility?: number;
 }
 
-export function HUD({ data, credibility }: Props) {
+export function HUD({ data }: Props) {
   if (!data) return null;
 
   return (

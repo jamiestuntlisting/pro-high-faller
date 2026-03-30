@@ -189,7 +189,7 @@ function App() {
             onHudUpdate={handleHudUpdate}
             onLanding={handleLanding}
           />
-          <HUD data={hudData} credibility={careerCredibility} />
+          <HUD data={hudData} />
         </div>
       )}
 
