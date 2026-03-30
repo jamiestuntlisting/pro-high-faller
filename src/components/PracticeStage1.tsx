@@ -129,7 +129,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gotItBtn: {
     position: 'absolute',
-    bottom: '40px',
+    top: '42%',
     left: '50%',
     transform: 'translateX(-50%)',
     fontFamily: mono,

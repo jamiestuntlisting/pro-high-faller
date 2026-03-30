@@ -87,19 +87,21 @@ export class CanvasRenderer {
       this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY, state.level.level);
     }
 
-    // Camera crew on far side of landing zone (world space) — single camera
-    const baseCrewX = layout.landingCenterX + state.level.targetSize + CAMERA_CREW_OFFSET;
-    FallerRenderer.drawCameraCrew(
-      ctx, baseCrewX, layout.groundY, fallerWorldY, screenX,
-      state.level.level, state.countdown.cameraRolling,
-    );
+    // Camera crew on far side of landing zone (world space) — skip for practice levels
+    if (state.level.level > 0) {
+      const baseCrewX = layout.landingCenterX + state.level.targetSize + CAMERA_CREW_OFFSET;
+      FallerRenderer.drawCameraCrew(
+        ctx, baseCrewX, layout.groundY, fallerWorldY, screenX,
+        state.level.level, state.countdown.cameraRolling,
+      );
 
-    // Crew text — rendered above crew in world space, or as overlay if off-screen
-    const crewTextWorldY = layout.groundY - 36;
-    const crewTextScreenY = crewTextWorldY - viewY;
-    if (crewTextScreenY < GAME_HEIGHT) {
-      // Crew text visible in world space
-      this.drawCrewText(ctx, state, layout.groundY);
+      // Crew text — rendered above crew in world space, or as overlay if off-screen
+      const crewTextWorldY = layout.groundY - 36;
+      const crewTextScreenY = crewTextWorldY - viewY;
+      if (crewTextScreenY < GAME_HEIGHT) {
+        // Crew text visible in world space
+        this.drawCrewText(ctx, state, layout.groundY);
+      }
     }
 
     // Cat twist: near landing on airbag/boxes, visually rotate toward back-first
@@ -141,7 +143,7 @@ export class CanvasRenderer {
     ctx.restore();
 
     // If crew text is off-screen (camera at top of tall building), draw as screen overlay
-    if (crewTextScreenY >= GAME_HEIGHT) {
+    if (state.level.level > 0 && crewTextScreenY >= GAME_HEIGHT) {
       this.drawCrewTextOverlay(ctx, state);
     }
   }

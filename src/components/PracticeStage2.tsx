@@ -10,7 +10,7 @@ interface Props {
 const INFINITY_LEVEL: LevelConfig = {
   level: 0,
   production: 'Free Practice',
-  height: 60,
+  height: 1000,
   targetType: 'airbag',
   targetSize: 60,
   idealAngle: 90,
