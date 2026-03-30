@@ -3,10 +3,9 @@ import type { HudSnapshot } from '../types';
 interface Props {
   data: HudSnapshot | null;
   credibility?: number;
-  onPractice?: () => void;
 }
 
-export function HUD({ data, credibility, onPractice }: Props) {
+export function HUD({ data, credibility }: Props) {
   if (!data) return null;
 
   return (
@@ -16,17 +15,9 @@ export function HUD({ data, credibility, onPractice }: Props) {
         <span style={styles.dim}>JOB</span> #{data.levelNumber}
       </div>
 
-      {/* Top-right: height + practice button on level 1 */}
+      {/* Top-right: height */}
       <div style={styles.topRight}>
         <span style={styles.dim}>HT:</span> {Math.round(data.height)}ft
-        {onPractice && data.levelNumber === 1 && (
-          <div
-            style={styles.practiceBtn}
-            onClick={(e) => { e.stopPropagation(); onPractice(); }}
-          >
-            PRACTICE HERE
-          </div>
-        )}
       </div>
 
       {/* Top-center: wind */}
@@ -97,17 +88,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '28px',
     fontWeight: 'bold',
     animation: 'blink 0.5s infinite',
-  },
-  practiceBtn: {
-    marginTop: '8px',
-    fontSize: '12px',
-    color: '#66cc66',
-    border: '2px solid #66cc66',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    pointerEvents: 'auto' as const,
-    textAlign: 'center' as const,
-    background: 'rgba(0, 0, 0, 0.6)',
   },
 };

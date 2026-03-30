@@ -87,6 +87,10 @@ export class CanvasRenderer {
       this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY, state.level.level);
     }
 
+    // Crew text Y — computed for both draw and overlay check
+    const crewTextWorldY = layout.groundY - 36;
+    const crewTextScreenY = crewTextWorldY - viewY;
+
     // Camera crew on far side of landing zone (world space) — skip for practice levels
     if (state.level.level > 0) {
       const baseCrewX = layout.landingCenterX + state.level.targetSize + CAMERA_CREW_OFFSET;
@@ -96,10 +100,7 @@ export class CanvasRenderer {
       );
 
       // Crew text — rendered above crew in world space, or as overlay if off-screen
-      const crewTextWorldY = layout.groundY - 36;
-      const crewTextScreenY = crewTextWorldY - viewY;
       if (crewTextScreenY < GAME_HEIGHT) {
-        // Crew text visible in world space
         this.drawCrewText(ctx, state, layout.groundY);
       }
     }

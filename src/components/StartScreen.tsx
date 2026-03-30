@@ -4,11 +4,13 @@ import type { LevelConfig } from '../types';
 interface Props {
   level: LevelConfig;
   onStart: () => void;
+  onPractice?: () => void;
 }
 
 export function StartScreen({
   level,
   onStart,
+  onPractice,
 }: Props) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -71,6 +73,12 @@ export function StartScreen({
       <button style={styles.startButton} onClick={onStart}>
         LET'S DO IT
       </button>
+
+      {onPractice && (
+        <button style={styles.practiceButton} onClick={onPractice}>
+          First time? Practice here
+        </button>
+      )}
     </div>
   );
 }
@@ -150,6 +158,18 @@ const styles: Record<string, React.CSSProperties> = {
     border: '3px solid #44FF44',
     borderRadius: '4px',
     cursor: 'pointer',
+    transition: 'all 0.1s',
+  },
+  practiceButton: {
+    fontFamily: '"Press Start 2P", "Courier New", monospace',
+    fontSize: '11px',
+    padding: '12px 24px',
+    background: 'transparent',
+    color: '#888888',
+    border: '1px solid #555',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    marginTop: '16px',
     transition: 'all 0.1s',
   },
 };

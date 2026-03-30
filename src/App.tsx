@@ -174,6 +174,7 @@ function App() {
         <StartScreen
           level={level}
           onStart={handleStart}
+          onPractice={currentLevel === 1 ? handlePractice : undefined}
         />
       )}
 
@@ -188,7 +189,7 @@ function App() {
             onHudUpdate={handleHudUpdate}
             onLanding={handleLanding}
           />
-          <HUD data={hudData} credibility={careerCredibility} onPractice={currentLevel === 1 ? handlePractice : undefined} />
+          <HUD data={hudData} credibility={careerCredibility} />
         </div>
       )}
 
