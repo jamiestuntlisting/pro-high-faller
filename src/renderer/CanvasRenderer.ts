@@ -83,7 +83,13 @@ export class CanvasRenderer {
     EnvironmentRenderer.draw(ctx, state.level, layout, landedInfo, viewY);
 
     // Wind particles (world space, before faller so they appear behind)
-    if (state.level.wind !== 0) {
+    if (state.level.level === 0 && f.phase === 'FALLING') {
+      // Practice level: show dynamic wind based on faller's horizontal velocity
+      const visualWind = f.vx * 0.3;
+      if (Math.abs(visualWind) > 0.5) {
+        this.drawWindParticles(ctx, visualWind, layout.groundY, viewY, state.level.level);
+      }
+    } else if (state.level.wind !== 0) {
       this.drawWindParticles(ctx, state.level.wind, layout.groundY, viewY, state.level.level);
     }
 
