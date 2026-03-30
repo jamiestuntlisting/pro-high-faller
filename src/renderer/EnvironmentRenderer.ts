@@ -1080,7 +1080,54 @@ function drawLandingZone(
     ctx.fillStyle = level.targetType === 'airbag' ? '#0e0e0e' : '#2a1c0e';
     ctx.fillRect(left, matTop, right - left, matHeight);
 
-    if (level.targetType === 'airbag') {
+    if (level.targetType === 'airbag' && level.level === 0) {
+      // Practice level: simple flat rectangular airbag covering the ground
+      const bagColor = '#1a3a6a';
+      const bagDark = '#12294d';
+      const seamColor = '#0f2240';
+      const trimColor = '#6b2222';
+      const flatH = Math.min(matHeight, 16); // short flat pad
+      const flatTop = groundY - flatH;
+
+      // Main body — flat rectangle
+      ctx.fillStyle = bagColor;
+      ctx.fillRect(left, flatTop, right - left, flatH);
+
+      // Darker edges
+      ctx.fillStyle = bagDark;
+      ctx.fillRect(left, flatTop, 3, flatH);
+      ctx.fillRect(right - 3, flatTop, 3, flatH);
+
+      // Horizontal seam
+      ctx.strokeStyle = seamColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(left, flatTop + Math.floor(flatH / 2));
+      ctx.lineTo(right, flatTop + Math.floor(flatH / 2));
+      ctx.stroke();
+
+      // Vertical seams
+      const panelW = Math.max(20, Math.floor((right - left) / 8));
+      for (let px = left + panelW; px < right; px += panelW) {
+        ctx.beginPath();
+        ctx.moveTo(px, flatTop);
+        ctx.lineTo(px, groundY);
+        ctx.stroke();
+      }
+
+      // Top edge line
+      ctx.strokeStyle = '#2a4a7a';
+      ctx.beginPath();
+      ctx.moveTo(left, flatTop);
+      ctx.lineTo(right, flatTop);
+      ctx.stroke();
+
+      // Red side trim
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(left, flatTop, 3, flatH);
+      ctx.fillRect(right - 3, flatTop, 3, flatH);
+
+    } else if (level.targetType === 'airbag') {
       // Inflatable stunt airbag — worn, muted, fits the dark pixel-art world
       const w = right - left;
 

@@ -181,14 +181,15 @@ function applyRotation(f: FallerState, dt: number): void {
 }
 
 function applyWind(f: FallerState, dt: number, state: GameState): void {
-  // Practice levels (level 0): gentle centering gusts push faller back toward middle
+  // Practice levels (level 0): keep faller roughly centered with gentle sway
   if (state.level.level === 0 && f.phase === 'FALLING') {
-    // Use elapsed time to create occasional wind gusts that shift direction
-    const gustCycle = Math.sin(state.elapsedTime * 0.8) * Math.sin(state.elapsedTime * 0.3);
-    // Centering force: stronger the further they drift from center
-    const centerPull = -f.x * 0.4;
-    const gustForce = gustCycle * 12 + centerPull;
-    f.vx += gustForce * dt;
+    // Strong centering spring — always pulls back to middle
+    const centerPull = -f.x * 2.0;
+    // Dampen horizontal velocity to prevent oscillation
+    const damping = -f.vx * 0.8;
+    // Tiny gentle sway for visual interest
+    const sway = Math.sin(state.elapsedTime * 0.5) * 2;
+    f.vx += (centerPull + damping + sway) * dt;
     return;
   }
   if (state.lockedWind === 0) return;
