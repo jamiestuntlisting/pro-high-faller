@@ -17,7 +17,7 @@ export function HUD({ data, credibility }: Props) {
 
       {/* Top-right: height */}
       <div style={styles.topRight}>
-        <span style={styles.dim}>HT:</span> {Math.round(data.height)}ft
+        {Math.round(data.height)}ft
       </div>
 
       {/* Top-center: wind */}
@@ -26,11 +26,6 @@ export function HUD({ data, credibility }: Props) {
           {data.wind > 0 ? '→' : '←'} <span style={styles.dim}>WIND</span> {Math.abs(data.wind)}
         </div>
       )}
-
-      {/* Bottom-right: credibility */}
-      <div style={styles.botRight}>
-        <span style={styles.dim}>CRED:</span> {credibility ?? 0}
-      </div>
 
       {/* Timing hint */}
       {data.timingHint && <div style={styles.hint}>{data.timingHint}</div>}
