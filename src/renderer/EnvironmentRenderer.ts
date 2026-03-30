@@ -1081,42 +1081,119 @@ function drawLandingZone(
     ctx.fillRect(left, matTop, right - left, matHeight);
 
     if (level.targetType === 'airbag') {
+      // Inflatable stunt airbag — worn, muted, fits the dark pixel-art world
+      const w = right - left;
+
       // Compute indent at each column if performer has landed
       const getIndent = (px: number): number => {
         if (!landedInfo) return 0;
         const dist = Math.abs(px - landedInfo.x);
-        // Deep gaussian fold, 10px max indent, 30px radius
         if (dist > 30) return 0;
         return Math.round(10 * Math.exp(-(dist * dist) / 180));
       };
 
-      // Top edge — indents where the performer landed
-      ctx.fillStyle = RENDER.ASCII_MED;
-      ctx.textBaseline = 'top';
-      ctx.fillText('[', left, matTop + getIndent(left));
-      for (let mx = left + 6; mx < right - 6; mx += 6) {
-        ctx.fillText('=', mx, matTop + getIndent(mx));
-      }
-      ctx.fillText(']', right - 6, matTop + getIndent(right - 6));
+      // Muted color palette — faded blue, like a well-used set piece
+      const bagMain = '#1a3a6a';
+      const bagDark = '#12294d';
+      const bagEdge = '#0e1f3a';
+      const seamColor = '#0f2240';
+      const trimColor = '#6b2222'; // faded dark red trim
 
-      // Fill body rows
-      const bodyRows = Math.max(1, Math.floor((matHeight - 8) / 4));
-      for (let r = 0; r < bodyRows; r++) {
-        ctx.fillStyle = r % 2 === 0 ? RENDER.ASCII_DIM : '#1a1a1a';
-        for (let mx = left + 6; mx < right - 6; mx += 6) {
-          const indent = getIndent(mx);
-          const charY = matTop + 4 + r * 4;
-          if (charY >= matTop + indent) {
-            ctx.fillText('█', mx, charY);
+      // Slight dome — not too dramatic
+      const bulgeH = Math.max(3, Math.round(matHeight * 0.15));
+      const bagTopBase = matTop;
+      const bagBottom = groundY;
+      const domeY = bagTopBase - bulgeH;
+      const sideW = Math.max(2, Math.round(w * 0.035));
+
+      // -- Main bag body with dome top --
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(left + sideW, bagBottom);
+      ctx.lineTo(left + sideW, bagTopBase);
+      ctx.quadraticCurveTo(left + w * 0.5, domeY, right - sideW, bagTopBase);
+      ctx.lineTo(right - sideW, bagBottom);
+      ctx.closePath();
+      ctx.clip();
+
+      // Flat fill — just subtle edge darkening, no glossy gradient
+      ctx.fillStyle = bagMain;
+      ctx.fillRect(left + sideW, domeY, w - sideW * 2, bagBottom - domeY);
+
+      // Darken edges slightly for minimal depth
+      ctx.fillStyle = bagDark;
+      ctx.fillRect(left + sideW, domeY, Math.round(w * 0.08), bagBottom - domeY);
+      ctx.fillRect(right - sideW - Math.round(w * 0.08), domeY, Math.round(w * 0.08), bagBottom - domeY);
+
+      // Vertical panel seams — stitched sections
+      const panelCount = Math.max(3, Math.round(w / 18));
+      ctx.strokeStyle = seamColor;
+      ctx.lineWidth = 1;
+      for (let p = 1; p < panelCount; p++) {
+        const px = left + sideW + (w - sideW * 2) * (p / panelCount);
+        const indent = getIndent(px);
+        const t = p / panelCount;
+        const seamTopY = bagTopBase - bulgeH * 4 * t * (1 - t) + indent;
+        ctx.beginPath();
+        ctx.moveTo(px, seamTopY);
+        ctx.lineTo(px, bagBottom);
+        ctx.stroke();
+      }
+
+      // Horizontal seam
+      const midY = bagTopBase + matHeight * 0.45;
+      ctx.strokeStyle = seamColor;
+      ctx.beginPath();
+      ctx.moveTo(left + sideW, midY);
+      ctx.lineTo(right - sideW, midY);
+      ctx.stroke();
+
+      // Worn texture — scattered dark speckles for dirt/scuffs
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+      for (let s = 0; s < 20; s++) {
+        const sx = left + sideW + ((s * 37 + 11) % (w - sideW * 2));
+        const sy = bagTopBase + ((s * 23 + 7) % (matHeight - 4));
+        ctx.fillRect(sx, sy, 2, 1);
+      }
+
+      // Landing indent deformation — subtle shadow
+      if (landedInfo) {
+        const ix = landedInfo.x;
+        const indentDepth = getIndent(ix);
+        if (indentDepth > 0) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+          const indentW = 25;
+          for (let dx = -indentW; dx <= indentW; dx += 2) {
+            const falloff = 1 - (dx * dx) / (indentW * indentW);
+            if (falloff > 0) {
+              const h = Math.round(indentDepth * falloff * 3);
+              ctx.globalAlpha = falloff * 0.3;
+              ctx.fillRect(ix + dx, bagTopBase, 2, h);
+            }
           }
+          ctx.globalAlpha = 1;
         }
       }
 
-      // Bottom edge
-      ctx.fillStyle = RENDER.ASCII_MED;
-      for (let mx = left; mx < right; mx += 6) {
-        ctx.fillText('-', mx, groundY - 4);
-      }
+      ctx.restore(); // end dome clip
+
+      // -- Top rim outline — subtle, not bright --
+      ctx.strokeStyle = '#2a4a7a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(left + sideW, bagTopBase);
+      ctx.quadraticCurveTo(left + w * 0.5, domeY, right - sideW, bagTopBase);
+      ctx.stroke();
+
+      // -- Bottom edge --
+      ctx.fillStyle = bagEdge;
+      ctx.fillRect(left, bagBottom - 2, w, 2);
+
+      // -- Side walls / trim — faded red, like worn vinyl --
+      ctx.fillStyle = trimColor;
+      ctx.fillRect(left, bagTopBase, sideW, matHeight);
+      ctx.fillRect(right - sideW, bagTopBase, sideW, matHeight);
+
     } else {
       // Boxes — cardboard box stack with store logos and edge lines
       // Clip to landing zone boundaries so boxes don't bleed out

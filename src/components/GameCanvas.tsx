@@ -14,10 +14,11 @@ interface Props {
 }
 
 /**
- * Compute CSS size so the canvas covers the viewport (zoom-to-fill)
- * while maintaining the native aspect ratio. Overflow is cropped.
+ * Compute CSS size so the canvas fits within the viewport (contain mode).
+ * Portrait/narrow screens: fill height, width follows aspect ratio.
+ * Wide/landscape screens: fit to height with pillar bars on the sides.
  */
-function useCoverSize() {
+function useContainSize() {
   const [size, setSize] = useState({ width: '100vw', height: '100dvh' });
 
   useEffect(() => {
@@ -25,15 +26,12 @@ function useCoverSize() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const canvasRatio = GAME_WIDTH / GAME_HEIGHT; // ~0.461
-      const screenRatio = vw / vh;
 
-      if (screenRatio > canvasRatio) {
-        // Screen is wider than canvas — fill width, overflow height
-        setSize({ width: `${vw}px`, height: `${vw / canvasRatio}px` });
-      } else {
-        // Screen is taller than canvas — fill height, overflow width
-        setSize({ width: `${vh * canvasRatio}px`, height: `${vh}px` });
-      }
+      // Always fit to height — on wide screens this leaves bars on the sides
+      const w = vh * canvasRatio;
+      const finalW = Math.min(w, vw); // don't exceed viewport width
+      const finalH = finalW / canvasRatio;
+      setSize({ width: `${finalW}px`, height: `${finalH}px` });
     }
     calc();
     window.addEventListener('resize', calc);
@@ -53,7 +51,7 @@ export function GameCanvas({
   onLanding,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const coverSize = useCoverSize();
+  const containSize = useContainSize();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,12 +79,13 @@ export function GameCanvas({
       display: 'flex',
       alignItems: 'flex-end',
       justifyContent: 'center',
+      background: '#000',
     }}>
       <canvas
         ref={canvasRef}
         style={{
-          width: coverSize.width,
-          height: coverSize.height,
+          width: containSize.width,
+          height: containSize.height,
           imageRendering: 'pixelated',
           display: 'block',
           touchAction: 'none',

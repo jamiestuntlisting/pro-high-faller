@@ -36,12 +36,28 @@ export class InputManager {
     this.consumed.delete('Space');
   };
 
+  // Mouse click → treat as Space (desktop)
+  private mousedownHandler = (e: MouseEvent) => {
+    e.preventDefault();
+    if (!this.keys.has('Space')) {
+      this.justPressed.add('Space');
+    }
+    this.keys.add('Space');
+  };
+
+  private mouseupHandler = (_e: MouseEvent) => {
+    this.keys.delete('Space');
+    this.consumed.delete('Space');
+  };
+
   attach(): void {
     window.addEventListener('keydown', this.keydownHandler);
     window.addEventListener('keyup', this.keyupHandler);
     window.addEventListener('touchstart', this.touchstartHandler, { passive: false });
     window.addEventListener('touchend', this.touchendHandler, { passive: false });
     window.addEventListener('touchcancel', this.touchendHandler, { passive: false });
+    window.addEventListener('mousedown', this.mousedownHandler);
+    window.addEventListener('mouseup', this.mouseupHandler);
   }
 
   detach(): void {
@@ -50,6 +66,8 @@ export class InputManager {
     window.removeEventListener('touchstart', this.touchstartHandler);
     window.removeEventListener('touchend', this.touchendHandler);
     window.removeEventListener('touchcancel', this.touchendHandler);
+    window.removeEventListener('mousedown', this.mousedownHandler);
+    window.removeEventListener('mouseup', this.mouseupHandler);
     this.keys.clear();
     this.justPressed.clear();
     this.consumed.clear();
