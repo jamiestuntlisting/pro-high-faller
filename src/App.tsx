@@ -9,9 +9,12 @@ import { RetirementScreen } from './components/RetirementScreen';
 import { NoWorkScreen } from './components/NoWorkScreen';
 import { ShopScreen, type ShopItem } from './components/ShopScreen';
 import { DrugOfferScreen } from './components/DrugOfferScreen';
+import { SplashScreen } from './components/SplashScreen';
+import { PracticeStage1 } from './components/PracticeStage1';
+import { PracticeStage2 } from './components/PracticeStage2';
 import { unlockAudio } from './engine/SoundFX';
 
-type Screen = 'briefing' | 'playing' | 'result' | 'shop' | 'retired' | 'no_work' | 'drug_offer';
+type Screen = 'splash' | 'briefing' | 'playing' | 'result' | 'shop' | 'retired' | 'no_work' | 'drug_offer' | 'practice_1' | 'practice_2';
 
 function getStartLevel(): number {
   const params = new URLSearchParams(window.location.search);
@@ -20,7 +23,7 @@ function getStartLevel(): number {
 }
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('briefing');
+  const [screen, setScreen] = useState<Screen>('splash');
   const [currentLevel, setCurrentLevel] = useState(getStartLevel);
   const [hudData, setHudData] = useState<HudSnapshot | null>(null);
   const [landingResult, setLandingResult] = useState<LandingResultType | null>(null);
@@ -130,6 +133,14 @@ function App() {
     setScreen('playing');
   }, []);
 
+  const handlePractice = useCallback(() => {
+    setScreen('practice_1');
+  }, []);
+
+  const handlePracticeExit = useCallback(() => {
+    setScreen('briefing');
+  }, []);
+
   const handleRestart = useCallback(() => {
     setCurrentLevel(1);
     setCareerHealth(200);
@@ -144,6 +155,21 @@ function App() {
 
   return (
     <div style={styles.wrapper}>
+      {screen === 'splash' && (
+        <SplashScreen onComplete={() => setScreen('briefing')} />
+      )}
+
+      {screen === 'practice_1' && (
+        <PracticeStage1
+          onNext={() => setScreen('practice_2')}
+          onExit={handlePracticeExit}
+        />
+      )}
+
+      {screen === 'practice_2' && (
+        <PracticeStage2 onExit={handlePracticeExit} />
+      )}
+
       {screen === 'briefing' && (
         <StartScreen
           level={level}
@@ -162,7 +188,7 @@ function App() {
             onHudUpdate={handleHudUpdate}
             onLanding={handleLanding}
           />
-          <HUD data={hudData} credibility={careerCredibility} />
+          <HUD data={hudData} credibility={careerCredibility} onPractice={currentLevel === 1 ? handlePractice : undefined} />
         </div>
       )}
 

@@ -14,9 +14,10 @@ interface Props {
 }
 
 /**
- * Compute CSS size so the canvas fits within the viewport (contain mode).
- * Portrait/narrow screens: fill height, width follows aspect ratio.
- * Wide/landscape screens: fit to height with pillar bars on the sides.
+ * Compute CSS size so the canvas fits entirely within the viewport (contain mode).
+ * Uses min-scale to guarantee neither dimension overflows.
+ * Portrait phones: fills width, may have black bar at top.
+ * Wide/landscape: fits height, black pillar bars on sides.
  */
 function useContainSize() {
   const [size, setSize] = useState({ width: '100vw', height: '100dvh' });
@@ -25,12 +26,10 @@ function useContainSize() {
     function calc() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const canvasRatio = GAME_WIDTH / GAME_HEIGHT; // ~0.461
-
-      // Always fit to height — on wide screens this leaves bars on the sides
-      const w = vh * canvasRatio;
-      const finalW = Math.min(w, vw); // don't exceed viewport width
-      const finalH = finalW / canvasRatio;
+      // Scale to fit — pick whichever dimension is the bottleneck
+      const scale = Math.min(vw / GAME_WIDTH, vh / GAME_HEIGHT);
+      const finalW = Math.floor(GAME_WIDTH * scale);
+      const finalH = Math.floor(GAME_HEIGHT * scale);
       setSize({ width: `${finalW}px`, height: `${finalH}px` });
     }
     calc();

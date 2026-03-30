@@ -3,9 +3,10 @@ import type { HudSnapshot } from '../types';
 interface Props {
   data: HudSnapshot | null;
   credibility?: number;
+  onPractice?: () => void;
 }
 
-export function HUD({ data, credibility }: Props) {
+export function HUD({ data, credibility, onPractice }: Props) {
   if (!data) return null;
 
   return (
@@ -15,9 +16,17 @@ export function HUD({ data, credibility }: Props) {
         <span style={styles.dim}>JOB</span> #{data.levelNumber}
       </div>
 
-      {/* Top-right: height */}
+      {/* Top-right: height + practice button on level 1 */}
       <div style={styles.topRight}>
         <span style={styles.dim}>HT:</span> {Math.round(data.height)}ft
+        {onPractice && data.levelNumber === 1 && (
+          <div
+            style={styles.practiceBtn}
+            onClick={(e) => { e.stopPropagation(); onPractice(); }}
+          >
+            PRACTICE HERE
+          </div>
+        )}
       </div>
 
       {/* Top-center: wind */}
@@ -50,34 +59,34 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 0,
     pointerEvents: 'none',
     fontFamily: mono,
-    fontSize: '10px',
+    fontSize: '30px',
     color: '#cccccc',
-    textShadow: '0 0 3px #000, 0 0 6px #000, 1px 1px 2px #000',
+    textShadow: '0 0 4px #000, 0 0 8px #000, 2px 2px 4px #000',
   },
   dim: {
     color: '#888888',
   },
   topLeft: {
     position: 'absolute',
-    top: '4px',
-    left: '6px',
+    top: '8px',
+    left: '10px',
   },
   topRight: {
     position: 'absolute',
-    top: '4px',
-    right: '6px',
+    top: '8px',
+    right: '10px',
+    textAlign: 'right' as const,
   },
   topCenter: {
     position: 'absolute',
-    top: '4px',
+    top: '8px',
     left: '50%',
     transform: 'translateX(-50%)',
-    fontSize: '11px',
   },
   botRight: {
     position: 'absolute',
-    bottom: '4px',
-    right: '6px',
+    bottom: '8px',
+    right: '10px',
   },
   hint: {
     position: 'absolute',
@@ -85,8 +94,19 @@ const styles: Record<string, React.CSSProperties> = {
     left: '50%',
     transform: 'translate(-50%, -50%)',
     color: '#cc4444',
-    fontSize: '11px',
+    fontSize: '28px',
     fontWeight: 'bold',
     animation: 'blink 0.5s infinite',
+  },
+  practiceBtn: {
+    marginTop: '6px',
+    fontSize: '8px',
+    color: '#66cc66',
+    border: '1px solid #66cc66',
+    padding: '2px 5px',
+    cursor: 'pointer',
+    pointerEvents: 'auto' as const,
+    textAlign: 'center' as const,
+    background: 'rgba(0, 0, 0, 0.5)',
   },
 };
