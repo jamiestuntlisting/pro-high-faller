@@ -181,6 +181,16 @@ function applyRotation(f: FallerState, dt: number): void {
 }
 
 function applyWind(f: FallerState, dt: number, state: GameState): void {
+  // Practice levels (level 0): gentle centering gusts push faller back toward middle
+  if (state.level.level === 0 && f.phase === 'FALLING') {
+    // Use elapsed time to create occasional wind gusts that shift direction
+    const gustCycle = Math.sin(state.elapsedTime * 0.8) * Math.sin(state.elapsedTime * 0.3);
+    // Centering force: stronger the further they drift from center
+    const centerPull = -f.x * 0.4;
+    const gustForce = gustCycle * 12 + centerPull;
+    f.vx += gustForce * dt;
+    return;
+  }
   if (state.lockedWind === 0) return;
   // Constant wind force locked at the start of the fall
   f.vx += state.lockedWind * dt;
