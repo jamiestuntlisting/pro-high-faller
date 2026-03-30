@@ -50,6 +50,16 @@ export function SplashScreen({ onComplete }: Props) {
     }}>
       <div style={{
         fontFamily: '"Courier New", monospace',
+        fontSize: '14px',
+        color: '#888888',
+        letterSpacing: '3px',
+        textTransform: 'uppercase',
+        marginBottom: '8px',
+      }}>
+        StuntListing's
+      </div>
+      <div style={{
+        fontFamily: '"Courier New", monospace',
         fontSize: '28px',
         fontWeight: 'bold',
         color: '#cccccc',
