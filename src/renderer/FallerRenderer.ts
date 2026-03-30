@@ -74,6 +74,7 @@ const COSTUMES: Costume[] = [
 ];
 
 function getCostume(level: number): Costume {
+  if (level <= 0) return COSTUMES[0]; // practice/tutorial levels use default costume
   return COSTUMES[(level - 1) % COSTUMES.length];
 }
 
