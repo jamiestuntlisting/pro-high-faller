@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { HudSnapshot, LandingResult } from '../types';
 import type { LevelConfig } from '../types';
 import { GameCanvas } from './GameCanvas';
@@ -8,24 +8,25 @@ interface Props {
   onExit: () => void;
 }
 
-const PRACTICE_LEVEL: LevelConfig = {
-  level: 0,
-  production: 'Tutorial',
-  height: 20,
-  targetType: 'airbag',
-  targetSize: 80,
-  idealAngle: 90,
-  wind: 0,
-  windGust: 0,
-  showTimingHints: false,
-  pay: 0,
-  coordinatorLine: '',
-};
-
 export function PracticeStage1({ onNext, onExit }: Props) {
   const [resetKey, setResetKey] = useState(0);
   const [phase, setPhase] = useState<'standing' | 'leaning' | 'jumping' | 'landed'>('standing');
   const [hasCompletedOnce, setHasCompletedOnce] = useState(false);
+
+  const level = useMemo<LevelConfig>(() => ({
+    level: 0,
+    production: 'Tutorial',
+    height: 20,
+    targetType: 'boxes',
+    targetSize: 200,
+    idealAngle: 90,
+    wind: 0,
+    windGust: 0,
+    showTimingHints: false,
+    pay: 0,
+    coordinatorLine: '',
+    costumeIndex: resetKey + 1,
+  }), [resetKey]);
 
   const handleHudUpdate = useCallback((snapshot: HudSnapshot) => {
     if (snapshot.phase === 'STANDING') setPhase('standing');
@@ -36,11 +37,12 @@ export function PracticeStage1({ onNext, onExit }: Props) {
   const handleLanding = useCallback((_result: LandingResult) => {
     setPhase('landed');
     setHasCompletedOnce(true);
-    // Auto-reset after a short pause
-    setTimeout(() => {
-      setResetKey((k) => k + 1);
-      setPhase('standing');
-    }, 1500);
+  }, []);
+
+  const handleTryAgain = useCallback(() => {
+    setResetKey((k) => k + 1);
+    setPhase('standing');
+    setHasCompletedOnce(false);
   }, []);
 
   let helperText = '';
@@ -52,7 +54,7 @@ export function PracticeStage1({ onNext, onExit }: Props) {
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
       <GameCanvas
         key={resetKey}
-        level={PRACTICE_LEVEL}
+        level={level}
         careerHealth={200}
         careerEarnings={0}
         jobsCompleted={0}
@@ -61,7 +63,7 @@ export function PracticeStage1({ onNext, onExit }: Props) {
       />
 
       {/* Helper text overlay */}
-      {helperText && (
+      {helperText && !hasCompletedOnce && (
         <div style={styles.helperText}>
           {helperText}
         </div>
@@ -75,13 +77,21 @@ export function PracticeStage1({ onNext, onExit }: Props) {
         EXIT
       </div>
 
-      {/* "Got it" button — only after completing once */}
-      {hasCompletedOnce && (
-        <div
-          style={styles.gotItBtn}
-          onClick={(e) => { e.stopPropagation(); onNext(); }}
-        >
-          GOT IT, MOVING ON
+      {/* Post-landing buttons — only after completing once */}
+      {hasCompletedOnce && phase === 'landed' && (
+        <div style={styles.buttonRow}>
+          <div
+            style={styles.tryAgainBtn}
+            onClick={(e) => { e.stopPropagation(); handleTryAgain(); }}
+          >
+            TRY AGAIN
+          </div>
+          <div
+            style={styles.gotItBtn}
+            onClick={(e) => { e.stopPropagation(); onNext(); }}
+          >
+            GOT IT
+          </div>
         </div>
       )}
     </div>
@@ -93,13 +103,13 @@ const mono = '"Courier New", "Consolas", monospace';
 const styles: Record<string, React.CSSProperties> = {
   helperText: {
     position: 'absolute',
-    top: '35%',
+    bottom: '28%',
     left: '50%',
-    transform: 'translate(-50%, -50%)',
+    transform: 'translateX(-50%)',
     fontFamily: mono,
     fontSize: '14px',
     fontWeight: 'bold',
-    color: '#ffcc00',
+    color: '#88ccff',
     textShadow: '0 0 6px #000, 0 0 12px #000, 2px 2px 4px #000',
     pointerEvents: 'none',
     animation: 'blink 1s infinite',
@@ -127,11 +137,27 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     pointerEvents: 'auto',
   },
-  gotItBtn: {
+  buttonRow: {
     position: 'absolute',
     top: '42%',
     left: '50%',
     transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '16px',
+    pointerEvents: 'auto',
+  },
+  tryAgainBtn: {
+    fontFamily: mono,
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#cccccc',
+    border: '2px solid #666',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    textShadow: '0 0 6px #000',
+    background: 'rgba(0, 0, 0, 0.7)',
+  },
+  gotItBtn: {
     fontFamily: mono,
     fontSize: '12px',
     fontWeight: 'bold',
@@ -139,7 +165,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '2px solid #66cc66',
     padding: '8px 16px',
     cursor: 'pointer',
-    pointerEvents: 'auto',
     textShadow: '0 0 6px #000',
     background: 'rgba(0, 0, 0, 0.7)',
   },

@@ -181,13 +181,13 @@ function applyRotation(f: FallerState, dt: number): void {
 }
 
 function applyWind(f: FallerState, dt: number, state: GameState): void {
-  // Practice levels (level 0): keep faller roughly centered with gentle sway
-  if (state.level.level === 0 && f.phase === 'FALLING') {
-    // Strong centering spring — always pulls back to middle
-    const centerPull = -f.x * 2.0;
-    // Dampen horizontal velocity to prevent oscillation
+  // Tall practice levels (level 0, 1000ft): keep faller centered in screen
+  if (state.level.level === 0 && state.level.height > 100 && f.phase === 'FALLING') {
+    // Target: center of screen in feet from building edge
+    // Screen is 320px wide, building edge ~42px, so center ~160px → (160-42)/4 ≈ 30ft
+    const centerFt = 30;
+    const centerPull = -(f.x - centerFt) * 2.0;
     const damping = -f.vx * 0.8;
-    // Tiny gentle sway for visual interest
     const sway = Math.sin(state.elapsedTime * 0.5) * 2;
     f.vx += (centerPull + damping + sway) * dt;
     return;
@@ -231,7 +231,9 @@ function getLandingHeight(f: FallerState, state: GameState): number {
 
   // Mat height scales with fall height
   const matHeightPx = landingZoneHeight(level.height, level.targetType);
-  const matHeightFt = matHeightPx / PIXELS_PER_FOOT;
+  // Practice levels use a thin flat pad regardless of fall height
+  const effectiveMatPx = level.level === 0 ? Math.min(matHeightPx, 16) : matHeightPx;
+  const matHeightFt = effectiveMatPx / PIXELS_PER_FOOT;
 
   // Check if faller is horizontally over the landing zone
   // Add 1.5ft body-width tolerance — performer has a physical body, not a point

@@ -39,6 +39,7 @@ export interface LevelConfig {
   coordinatorLine: string; // Briefing dialogue
   jumpType?: JumpType;     // Where the performer jumps from (default: 'building')
   parachute?: boolean;     // Slow fall with parachute canopy
+  costumeIndex?: number;   // Override costume selection (for practice level variety)
 }
 
 // === COUNTDOWN ===

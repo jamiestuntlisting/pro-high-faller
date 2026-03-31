@@ -143,7 +143,7 @@ export class CanvasRenderer {
     FallerRenderer.draw(
       ctx, screenX, fallerWorldY, drawAngle,
       f.phase, drawTucked, pivotAtFeet, state.elapsedTime,
-      state.level.level, state.jumpTimer, state.level.targetType,
+      state.level.costumeIndex ?? state.level.level, state.jumpTimer, state.level.targetType,
       state.landedTime, state.backFall, state.level.parachute === true,
     );
 

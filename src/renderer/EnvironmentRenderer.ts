@@ -1076,58 +1076,56 @@ function drawLandingZone(
   } else {
     const matTop = groundY - matHeight;
 
-    // Solid opaque background behind landing zone — prevents sky bleed-through
-    ctx.fillStyle = level.targetType === 'airbag' ? '#0e0e0e' : '#2a1c0e';
-    ctx.fillRect(left, matTop, right - left, matHeight);
-
     if (level.targetType === 'airbag' && level.level === 0) {
-      // Practice level: simple flat rectangular airbag covering the ground
+      // Practice level: flat rectangular airbag clamped to screen width
+      const flatLeft = 0;
+      const flatRight = GAME_WIDTH;
       const bagColor = '#1a3a6a';
       const bagDark = '#12294d';
       const seamColor = '#0f2240';
       const trimColor = '#6b2222';
-      const flatH = Math.min(matHeight, 16); // short flat pad
+      const flatH = 16;
       const flatTop = groundY - flatH;
 
-      // Main body — flat rectangle
+      ctx.fillStyle = '#0e0e0e';
+      ctx.fillRect(flatLeft, flatTop, flatRight - flatLeft, flatH);
+
       ctx.fillStyle = bagColor;
-      ctx.fillRect(left, flatTop, right - left, flatH);
+      ctx.fillRect(flatLeft, flatTop, flatRight - flatLeft, flatH);
 
-      // Darker edges
       ctx.fillStyle = bagDark;
-      ctx.fillRect(left, flatTop, 3, flatH);
-      ctx.fillRect(right - 3, flatTop, 3, flatH);
+      ctx.fillRect(flatLeft, flatTop, 3, flatH);
+      ctx.fillRect(flatRight - 3, flatTop, 3, flatH);
 
-      // Horizontal seam
       ctx.strokeStyle = seamColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(left, flatTop + Math.floor(flatH / 2));
-      ctx.lineTo(right, flatTop + Math.floor(flatH / 2));
+      ctx.moveTo(flatLeft, flatTop + Math.floor(flatH / 2));
+      ctx.lineTo(flatRight, flatTop + Math.floor(flatH / 2));
       ctx.stroke();
 
-      // Vertical seams
-      const panelW = Math.max(20, Math.floor((right - left) / 8));
-      for (let px = left + panelW; px < right; px += panelW) {
+      const panelW = Math.max(20, Math.floor((flatRight - flatLeft) / 8));
+      for (let px = flatLeft + panelW; px < flatRight; px += panelW) {
         ctx.beginPath();
         ctx.moveTo(px, flatTop);
         ctx.lineTo(px, groundY);
         ctx.stroke();
       }
 
-      // Top edge line
       ctx.strokeStyle = '#2a4a7a';
       ctx.beginPath();
-      ctx.moveTo(left, flatTop);
-      ctx.lineTo(right, flatTop);
+      ctx.moveTo(flatLeft, flatTop);
+      ctx.lineTo(flatRight, flatTop);
       ctx.stroke();
 
-      // Red side trim
       ctx.fillStyle = trimColor;
-      ctx.fillRect(left, flatTop, 3, flatH);
-      ctx.fillRect(right - 3, flatTop, 3, flatH);
+      ctx.fillRect(flatLeft, flatTop, 3, flatH);
+      ctx.fillRect(flatRight - 3, flatTop, 3, flatH);
 
     } else if (level.targetType === 'airbag') {
+      // Solid opaque background behind landing zone — prevents sky bleed-through
+      ctx.fillStyle = '#0e0e0e';
+      ctx.fillRect(left, matTop, right - left, matHeight);
       // Inflatable stunt airbag — worn, muted, fits the dark pixel-art world
       const w = right - left;
 
@@ -1242,6 +1240,9 @@ function drawLandingZone(
       ctx.fillRect(right - sideW, bagTopBase, sideW, matHeight);
 
     } else {
+      // Solid opaque background behind boxes
+      ctx.fillStyle = '#2a1c0e';
+      ctx.fillRect(left, matTop, right - left, matHeight);
       // Boxes — cardboard box stack with store logos and edge lines
       // Clip to landing zone boundaries so boxes don't bleed out
       ctx.save();

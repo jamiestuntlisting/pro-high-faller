@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import type { HudSnapshot, LandingResult } from '../types';
 import type { LevelConfig } from '../types';
 import { GameCanvas } from './GameCanvas';
@@ -7,20 +7,6 @@ interface Props {
   onExit: () => void;
 }
 
-const INFINITY_LEVEL: LevelConfig = {
-  level: 0,
-  production: 'Free Practice',
-  height: 1000,
-  targetType: 'airbag',
-  targetSize: 200,
-  idealAngle: 90,
-  wind: 0,
-  windGust: 0,
-  showTimingHints: false,
-  pay: 0,
-  coordinatorLine: '',
-};
-
 type HintStep = 'waiting' | 'hold_to_flip' | 'release' | 'done';
 
 export function PracticeStage2({ onExit }: Props) {
@@ -28,6 +14,21 @@ export function PracticeStage2({ onExit }: Props) {
   const [hint, setHint] = useState<HintStep>('waiting');
   const hasFlippedRef = useRef(false);
   const hasUntuckedRef = useRef(false);
+
+  const level = useMemo<LevelConfig>(() => ({
+    level: 0,
+    production: 'Free Practice',
+    height: 1000,
+    targetType: 'airbag',
+    targetSize: 400,
+    idealAngle: 90,
+    wind: 0,
+    windGust: 0,
+    showTimingHints: false,
+    pay: 0,
+    coordinatorLine: '',
+    costumeIndex: resetKey + 1,
+  }), [resetKey]);
 
   const handleHudUpdate = useCallback((snapshot: HudSnapshot) => {
     if (snapshot.phase === 'STANDING' || snapshot.phase === 'LEANING') {
@@ -78,7 +79,7 @@ export function PracticeStage2({ onExit }: Props) {
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
       <GameCanvas
         key={resetKey}
-        level={INFINITY_LEVEL}
+        level={level}
         careerHealth={200}
         careerEarnings={0}
         jobsCompleted={0}
